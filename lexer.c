@@ -123,12 +123,12 @@ int keyword_tokens[] = {
 	WHILE
 };
 
-void error(int code, char *msg)
+static void error(int code, char *msg)
 {
 	printf("Error %d: %s\r\n", code, msg);
 }
 
-void error_no_msg(int code)
+static void error_no_msg(int code)
 {
 	error(code, "No message");
 }
@@ -387,49 +387,49 @@ int scan_token(char *buffer, struct token *t)
 		case ' ':
 			break;
 
-		case '(': *t = (struct token) { LEFT_PAREN, "(", "", line }; return line;
-		case ')': *t = (struct token) { RIGHT_PAREN, ")", "", line }; return line;
-		case '{': *t = (struct token) { LEFT_BRACE, "{", "", line }; return line;
-		case '}': *t = (struct token) { RIGHT_BRACE, "}", "", line }; return line;
-		case '[': *t = (struct token) { LEFT_BRACKET, "[", "", line }; return line;
-		case ']': *t = (struct token) { RIGHT_BRACKET, "]", "", line }; return line;
-		case ',': *t = (struct token) { COMMA, ",", "", line }; return line;
-		case '.': *t = (struct token) { DOT, ".", "", line }; return line;
-		case '-': *t = (struct token) { MINUS, "-", "", line }; return line;
-		case '+': *t = (struct token) { PLUS, "+", "", line }; return line;
-		case ';': *t = (struct token) { SEMICOLON, ";", "", line }; return line;
-		case ':': *t = (struct token) { COLON, ":", "", line }; return line;
-		case '*': *t = (struct token) { STAR, "*", "", line }; return line;
+		case '(': *t = (struct token) { LEFT_PAREN, "(", "(", line }; return line;
+		case ')': *t = (struct token) { RIGHT_PAREN, ")", ")", line }; return line;
+		case '{': *t = (struct token) { LEFT_BRACE, "{", "{", line }; return line;
+		case '}': *t = (struct token) { RIGHT_BRACE, "}", "}", line }; return line;
+		case '[': *t = (struct token) { LEFT_BRACKET, "[", "[", line }; return line;
+		case ']': *t = (struct token) { RIGHT_BRACKET, "]", "]", line }; return line;
+		case ',': *t = (struct token) { COMMA, ",", ",", line }; return line;
+		case '.': *t = (struct token) { DOT, ".", ".", line }; return line;
+		case '-': *t = (struct token) { MINUS, "-", "-", line }; return line;
+		case '+': *t = (struct token) { PLUS, "+", "+", line }; return line;
+		case ';': *t = (struct token) { SEMICOLON, ";", ";", line }; return line;
+		case ':': *t = (struct token) { COLON, ":", ":", line }; return line;
+		case '*': *t = (struct token) { STAR, "*", "*", line }; return line;
 
 		case '/':
 			if (match(buffer, &i, '/')) {
 				while (buffer[i++] != '\n' && buffer[i] != '\0')
 					;
 			} else {
-				*t = (struct token) { SLASH, "/", "", line };
+				*t = (struct token) { SLASH, "/", "/", line };
 				return line;
 			}
 			break;
 		case '!':
 			*t = match(buffer, &i, '=')
 				? (struct token) { BANG_EQUAL, "!=", "", line }
-				: (struct token) { BANG, "!", "", line };
+				: (struct token) { BANG, "!", "!", line };
 			return line;
 		case '=':
 			*t = match(buffer, &i, '=')
-				? (struct token) { EQUAL_EQUAL, "==", "", line }
-				: (struct token) { EQUAL, "=", "", line };
+				? (struct token) { EQUAL_EQUAL, "==", "==", line }
+				: (struct token) { EQUAL, "=", "=", line };
 			return line;
 		case '<':
 			*t = match(buffer, &i, '=')
-				? (struct token) { LESS_EQUAL, "<=", "", line }
-				: (struct token) { LESS, "<", "", line };
+				? (struct token) { LESS_EQUAL, "<=", "<=", line }
+				: (struct token) { LESS, "<", "<", line };
 			return line;
 
 		case '>':
 			*t = match(buffer, &i, '=')
-				? (struct token) { GREATER_EQUAL, ">=", "", line }
-				: (struct token) { GREATER, ">", "", line };
+				? (struct token) { GREATER_EQUAL, ">=", ">=", line }
+				: (struct token) { GREATER, ">", ">", line };
 			return line;
 
 
@@ -460,17 +460,20 @@ int scan_token(char *buffer, struct token *t)
 	return 0;
 }
 
-struct t_vector parse_buffer(char *buffer)
+struct t_vector *parse_buffer(char *buffer)
 {
 	struct token tmp[T_VEC_SIZE];
-	struct t_vector t_vec = { tmp, T_VEC_SIZE, 0 };
+	struct t_vector *t_vec = malloc(sizeof(struct t_vector));
+	t_vec->array = tmp;
+	t_vec->size = 0;
+	t_vec->capacity = T_VEC_SIZE;
 	
 	char c;
 	int i = 0;
 	struct token t;
 	while (scan_token(buffer, &t)) {
 		printf("Scanned token %s, as %s.\r\n", token_strs[t.type], t.lexeme);
-		int err = push_back(&t_vec, t);
+		int err = push_back(t_vec, t);
 		if (err != 0) {
 			printf("Error while parsing file, aborting.");
 			break;

@@ -1,11 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "lexer.c"
+#include "ast.h"
+
+static void error(int code, char *msg)
+{
+	printf("Error %d: %s\r\n", code, msg);
+}
+
+static void error_no_msg(int code)
+{
+	error(code, "No message");
+}
 
 void run(char *buffer)
 {
-	parse_buffer(buffer);
-	// lexical analysis...
+	struct t_vector *tokens = parse_buffer(buffer);
+	ast(tokens);
 	// intermediate repr...
 	// compilation...
 }
