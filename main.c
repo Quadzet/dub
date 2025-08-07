@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "ast.h"
+#include "eval.h"
 
 static void error(int code, char *msg)
 {
@@ -15,9 +15,14 @@ static void error_no_msg(int code)
 void run(char *buffer)
 {
 	struct t_vector *tokens = parse_buffer(buffer);
-	ast(tokens);
+	struct expr *e = ast(tokens);
+	struct eval v = evaluate(e);
+	printf("Evaluation complete!\nResult: ");
+	eval_to_str(&v);
 	// intermediate repr...
 	// compilation...
+	free_expr(e);
+	// free_eval(v);
 }
 
 void run_file(char *path)
@@ -43,7 +48,6 @@ void run_file(char *path)
 		return;
 	}
 
-	printf("Parsing buffer...\r\n");
 	run(buffer);
 }
 

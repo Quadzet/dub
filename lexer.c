@@ -188,24 +188,25 @@ int add(struct hash_node *set[], char *key, char *val)
 	return 1;
 }
 
-// struct hash_node **get_reserved_words()
-// {
-// 	struct hash_node *map[100] = malloc(sizeof(struct hash_node) * 100);
-//
-// }
+enum val_type {
+	V_INT, V_DOUBLE, V_STRING, V_NIL, V_BOOL
+};
 
-struct literal
-{
-	// union/variant..?
+union val {
+	int ival;
+	double dval;
+	char *sval;
+	int null;
+	int boolean;
 };
 
 struct token
 {
 	enum token_type type;
 	char *lexeme;
-	char *literal;
-	// literal ..?
 	int line;
+	union val value;
+	enum val_type value_type;
 };
 
 char *token_to_str(struct token *t)
@@ -214,8 +215,34 @@ char *token_to_str(struct token *t)
 	if (!repr) 
 		return NULL;
 
-	int n_chars = sprintf(repr, "[%u] %s: %s [type %u]",
-		  t->line, t->lexeme, t->literal, t->type);
+	int n_chars = 0;
+	switch (t->value_type) {
+	case V_INT:
+		n_chars = sprintf(repr, "[%u] %s: [type %u] [value %d]",
+			t->line, t->lexeme, t->type, t->value.ival);
+		break;
+	case V_DOUBLE:
+		n_chars = sprintf(repr, "[%u] %s: [type %u] [value %f]",
+			t->line, t->lexeme, t->type, t->value.dval);
+		break;
+	case V_STRING:
+		n_chars = sprintf(repr, "[%u] %s: [type %u] [value %s]",
+			t->line, t->lexeme, t->type, t->value.sval);
+		break;
+	case V_NIL:
+		n_chars = sprintf(repr, "[%u] %s: [type %u] [value %d]",
+			t->line, t->lexeme, t->type, t->value.null);
+		break;
+	case V_BOOL:
+		n_chars = sprintf(repr, "[%u] %s: [type %u] [value %d]",
+			t->line, t->lexeme, t->type, t->value.boolean);
+		break;
+	default:
+		n_chars = sprintf(repr, "[%u] %s: [type %u]",
+			t->line, t->lexeme, t->type);
+		break;
+	}
+
 	if (n_chars < 0) {
 		error(SPRINTF_ERROR, "sprintf error in token_to_str");
 		free(repr);
@@ -231,6 +258,13 @@ struct t_vector
 	int capacity;
 	int size;
 };
+
+void free_t_vector(struct t_vector *vec)
+{
+	if (!vec) return;
+	free(vec->array);
+	free(vec);
+}
 
 int push_back(struct t_vector *t_vec, struct token t)
 {
@@ -286,10 +320,35 @@ struct token identifier(char *buffer, int *i, int *line)
 	identifier_str[len] = '\0';
 
 	int type = is_keyword(identifier_str);
-	if (!type)
-		type = IDENTIFIER;
+	union val v;
+	enum val_type vtype;
 
-	struct token t = { type, identifier_str, identifier_str, *line };
+	if (!type) {
+		type = IDENTIFIER;
+		v.sval = identifier_str;
+		vtype = V_STRING;
+	} else {
+		switch (type) {
+		case TRUE:
+			v.boolean = 1;
+			vtype = V_BOOL;
+			break;
+		case FALSE:
+			v.boolean = 0;
+			vtype = V_BOOL;
+			break;
+		case NIL:
+			v.null = 0;
+			vtype = V_NIL;
+			break;
+		default:
+			v.sval = identifier_str;
+			vtype = V_STRING;
+			break;
+		}
+	}
+
+	struct token t = { type, identifier_str, *line, v, vtype };
 	return t;
 }
 
@@ -313,7 +372,10 @@ struct token number(char *buffer, int *i, int *line)
 	memcpy(num_str, buffer + start, len);
 	num_str[len] = '\0';
 
-	struct token t = { NUMBER, num_str, num_str, *line };
+	char *dummy_ptr;
+	union val v;
+	v.dval = strtod(num_str, &dummy_ptr);
+	struct token t = { NUMBER, num_str, *line, v, V_DOUBLE};
 	return t;
 }
 
@@ -365,7 +427,9 @@ struct token string(char *buffer, int *i, int *line)
 	lexeme[lexeme_len - 1] = '"';
 	lexeme[lexeme_len] = '\0';
 
-	struct token t = { STRING, lexeme, literal, start_line };
+	union val v;
+	v.sval = literal;
+	struct token t = { STRING, lexeme, start_line, v, V_STRING };
 	return t;
 }
 
@@ -387,49 +451,49 @@ int scan_token(char *buffer, struct token *t)
 		case ' ':
 			break;
 
-		case '(': *t = (struct token) { LEFT_PAREN, "(", "(", line }; return line;
-		case ')': *t = (struct token) { RIGHT_PAREN, ")", ")", line }; return line;
-		case '{': *t = (struct token) { LEFT_BRACE, "{", "{", line }; return line;
-		case '}': *t = (struct token) { RIGHT_BRACE, "}", "}", line }; return line;
-		case '[': *t = (struct token) { LEFT_BRACKET, "[", "[", line }; return line;
-		case ']': *t = (struct token) { RIGHT_BRACKET, "]", "]", line }; return line;
-		case ',': *t = (struct token) { COMMA, ",", ",", line }; return line;
-		case '.': *t = (struct token) { DOT, ".", ".", line }; return line;
-		case '-': *t = (struct token) { MINUS, "-", "-", line }; return line;
-		case '+': *t = (struct token) { PLUS, "+", "+", line }; return line;
-		case ';': *t = (struct token) { SEMICOLON, ";", ";", line }; return line;
-		case ':': *t = (struct token) { COLON, ":", ":", line }; return line;
-		case '*': *t = (struct token) { STAR, "*", "*", line }; return line;
+		case '(': *t = (struct token) { LEFT_PAREN, "(", line }; return line;
+		case ')': *t = (struct token) { RIGHT_PAREN, ")", line }; return line;
+		case '{': *t = (struct token) { LEFT_BRACE, "{", line }; return line;
+		case '}': *t = (struct token) { RIGHT_BRACE, "}", line }; return line;
+		case '[': *t = (struct token) { LEFT_BRACKET, "[", line }; return line;
+		case ']': *t = (struct token) { RIGHT_BRACKET, "]", line }; return line;
+		case ',': *t = (struct token) { COMMA, ",", line }; return line;
+		case '.': *t = (struct token) { DOT, ".", line }; return line;
+		case '-': *t = (struct token) { MINUS, "-", line }; return line;
+		case '+': *t = (struct token) { PLUS, "+", line }; return line;
+		case ';': *t = (struct token) { SEMICOLON, ";", line }; return line;
+		case ':': *t = (struct token) { COLON, ":", line }; return line;
+		case '*': *t = (struct token) { STAR, "*", line }; return line;
 
 		case '/':
 			if (match(buffer, &i, '/')) {
 				while (buffer[i++] != '\n' && buffer[i] != '\0')
 					;
 			} else {
-				*t = (struct token) { SLASH, "/", "/", line };
+				*t = (struct token) { SLASH, "/", line };
 				return line;
 			}
 			break;
 		case '!':
 			*t = match(buffer, &i, '=')
-				? (struct token) { BANG_EQUAL, "!=", "", line }
-				: (struct token) { BANG, "!", "!", line };
+				? (struct token) { BANG_EQUAL, "", line }
+				: (struct token) { BANG, "!", line };
 			return line;
 		case '=':
 			*t = match(buffer, &i, '=')
-				? (struct token) { EQUAL_EQUAL, "==", "==", line }
-				: (struct token) { EQUAL, "=", "=", line };
+				? (struct token) { EQUAL_EQUAL, "==", line }
+				: (struct token) { EQUAL, "=", line };
 			return line;
 		case '<':
 			*t = match(buffer, &i, '=')
-				? (struct token) { LESS_EQUAL, "<=", "<=", line }
-				: (struct token) { LESS, "<", "<", line };
+				? (struct token) { LESS_EQUAL, "<=", line }
+				: (struct token) { LESS, "<", line };
 			return line;
 
 		case '>':
 			*t = match(buffer, &i, '=')
-				? (struct token) { GREATER_EQUAL, ">=", ">=", line }
-				: (struct token) { GREATER, ">", ">", line };
+				? (struct token) { GREATER_EQUAL, ">=", line }
+				: (struct token) { GREATER, ">", line };
 			return line;
 
 
@@ -462,12 +526,13 @@ int scan_token(char *buffer, struct token *t)
 
 struct t_vector *parse_buffer(char *buffer)
 {
-	struct token tmp[T_VEC_SIZE];
+	struct token *tmp = malloc(T_VEC_SIZE);
 	struct t_vector *t_vec = malloc(sizeof(struct t_vector));
 	t_vec->array = tmp;
 	t_vec->size = 0;
 	t_vec->capacity = T_VEC_SIZE;
 	
+	printf("Parsing buffer...\r\n");
 	char c;
 	int i = 0;
 	struct token t;
@@ -479,6 +544,8 @@ struct t_vector *parse_buffer(char *buffer)
 			break;
 		}
 	}
+	printf("Parsing complete\n\n");
+
 	return t_vec;
 }
 

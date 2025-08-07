@@ -3,6 +3,8 @@
 
 #include "lexer.h"
 
+extern char *expr_type_strs[4];
+
 enum expr_type
 {
 	GROUP,
@@ -15,11 +17,9 @@ struct expr
 {
 	enum expr_type type;
 	struct expr *left;
-	struct token *operator;
+	struct token *op;
 	struct expr *right;
 };
-
-
 
 int assert(int check, char *msg);
 char *literal_expr_to_str(struct expr *e);
@@ -39,6 +39,6 @@ struct expr *equality();
 struct expr *expression();
 
 void free_expr(struct expr *e);
-void ast(struct t_vector *in_tokens);
+struct expr *ast(struct t_vector *in_tokens);
 
 #endif

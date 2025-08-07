@@ -46,13 +46,16 @@ struct hash_node
 	char *val;
 };
 
-struct token
-{
-	enum token_type type;
-	char *lexeme;
-	char *literal;
-	// literal ..?
-	int line;
+enum val_type {
+	V_INT, V_DOUBLE, V_STRING, V_NIL, V_BOOL
+};
+
+union val {
+	int ival;
+	double dval;
+	char *sval;
+	int null;
+	int boolean;
 };
 
 struct t_vector
@@ -60,6 +63,15 @@ struct t_vector
 	struct token *array;
 	int capacity;
 	int size;
+};
+
+struct token
+{
+	enum token_type type;
+	char *lexeme;
+	int line;
+	union val value;
+	enum val_type value_type;
 };
 
 int hash(char *key);
