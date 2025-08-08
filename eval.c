@@ -99,7 +99,7 @@ struct eval eval_binary(struct expr *e)
 	printf("Evaluating binary expr ");
 	switch (e->op->type) {
 	case SLASH:
-		printf("division");
+		printf("division\n");
 		if (left.type == V_INT && right.type == V_INT) {
 			if (right.value.ival == 0) {
 				printf("Division by zero\n");
@@ -138,7 +138,7 @@ struct eval eval_binary(struct expr *e)
 		}
 		break;
 	case STAR:
-		printf("multiplication");
+		printf("multiplication\n");
 		if (left.type == V_INT && right.type == V_INT) {
 			v.value.ival = left.value.ival * right.value.ival;
 			v.type = V_INT;
@@ -157,7 +157,7 @@ struct eval eval_binary(struct expr *e)
 		}
 		break;
 	case MINUS:
-		printf("subtraction");
+		printf("subtraction\n");
 		if (left.type == V_INT && right.type == V_INT) {
 			v.value.ival = left.value.ival - right.value.ival;
 			v.type = V_INT;
@@ -176,7 +176,7 @@ struct eval eval_binary(struct expr *e)
 		}
 		break;
 	case PLUS:
-		printf("addition");
+		printf("addition\n");
 		if (left.type == V_INT && right.type == V_INT) {
 			v.value.ival = left.value.ival + right.value.ival;
 			v.type = V_INT;
@@ -189,6 +189,16 @@ struct eval eval_binary(struct expr *e)
 		} else if (left.type == V_DOUBLE && right.type == V_DOUBLE) {
 			v.value.dval = left.value.dval + right.value.dval;
 			v.type = V_DOUBLE;
+		} else if (left.type == V_STRING && right.type == V_STRING) {
+			int len1 = strlen(left.value.sval);
+			int len2 = strlen(right.value.sval);
+			char *res = malloc(len1 + len2 + 1);
+			memcpy(res, left.value.sval, len1);
+			memcpy(res + len1, right.value.sval, len2);
+			res[len1 + len2] = '\n';
+
+			v.value.sval = res;
+			v.type = V_STRING;
 		} else {
 			printf("Invalid types for addition\n");
 			v.type = V_NIL;
@@ -196,7 +206,7 @@ struct eval eval_binary(struct expr *e)
 
 		break;
 	case GREATER:
-		printf("greater comparison");
+		printf("greater comparison\n");
 		if (left.type == V_INT && right.type == V_INT) {
 			v.value.boolean = left.value.ival > right.value.ival;
 			v.type = V_BOOL;
@@ -216,7 +226,7 @@ struct eval eval_binary(struct expr *e)
 
 		break;
 	case GREATER_EQUAL:
-		printf("greater or equal comparison");
+		printf("greater or equal comparison\n");
 		if (left.type == V_INT && right.type == V_INT) {
 			v.value.boolean = left.value.ival >= right.value.ival;
 			v.type = V_BOOL;
@@ -235,7 +245,7 @@ struct eval eval_binary(struct expr *e)
 		}
 		break;
 	case LESS:
-		printf("less than comparison");
+		printf("less than comparison\n");
 		if (left.type == V_INT && right.type == V_INT) {
 			v.value.boolean = left.value.ival < right.value.ival;
 			v.type = V_BOOL;
@@ -254,7 +264,7 @@ struct eval eval_binary(struct expr *e)
 		}
 		break;
 	case LESS_EQUAL:
-		printf("less than or equal comparison");
+		printf("less than or equal comparison\n");
 		if (left.type == V_INT && right.type == V_INT) {
 			v.value.boolean = left.value.ival <= right.value.ival;
 			v.type = V_BOOL;
@@ -273,7 +283,7 @@ struct eval eval_binary(struct expr *e)
 		}
 		break;
 	case EQUAL_EQUAL:
-		printf("equality comparison");
+		printf("equality comparison\n");
 		if (left.type == V_BOOL && right.type == V_BOOL) {
 			v.value.boolean = left.value.boolean == right.value.boolean;
 			v.type = V_BOOL;
