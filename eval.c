@@ -195,7 +195,7 @@ struct eval eval_binary(struct expr *e)
 			char *res = malloc(len1 + len2 + 1);
 			memcpy(res, left.value.sval, len1);
 			memcpy(res + len1, right.value.sval, len2);
-			res[len1 + len2] = '\n';
+			res[len1 + len2] = '\0';
 
 			v.value.sval = res;
 			v.type = V_STRING;
