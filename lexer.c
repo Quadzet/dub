@@ -5,6 +5,9 @@
 
 #define MAXLINE 10000
 
+static int i = 0;
+static int line = 1;
+
 enum errors {
 	MALLOC_ERROR,
 	PUSH_BACK_ERROR,
@@ -435,9 +438,6 @@ struct token string(char *buffer, int *i, int *line)
 
 int scan_token(char *buffer, struct token *t)
 {
-	static int i = 0;
-	// printf("i is now %d\r\n", i);
-	static int line = 1;
 	char c;
 	char err_str[256];
 	while (1) {
@@ -534,7 +534,8 @@ struct t_vector *parse_buffer(char *buffer)
 	
 	printf("Parsing buffer...\r\n");
 	char c;
-	int i = 0;
+	i = 0;
+	line = 1;
 	struct token t;
 	while (scan_token(buffer, &t)) {
 		printf("Scanned token %s, as %s.\r\n", token_strs[t.type], t.lexeme);
