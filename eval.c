@@ -6,28 +6,36 @@ struct eval
 	union val value;
 };
 
-void eval_to_str(struct eval *v)
+char *eval_to_str(struct eval *v)
 {
-    switch (v->type) {
-        case V_INT:
-            printf("[INT]: %d\n", v->value.ival);
-            break;
-        case V_DOUBLE:
-            printf("[DOUBLE]: %f\n", v->value.dval);
-            break;
-        case V_STRING:
-            printf("[STRING]: %s\n", v->value.sval);
-            break;
-        case V_BOOL:
-            printf("[BOOL]: %s\n", v->value.boolean ? "true" : "false");
-            break;
-        case V_NIL:
-            printf("[NIL]: nil\n");
-            break;
-        default:
-            printf("[UNKNOWN]: <unknown type>\n");
-            break;
+	char tmp[256];
+	
+	switch (v->type) {
+	case V_INT:
+	    sscanf(tmp, "[INT]: %d\n", &v->value.ival);
+	    break;
+	case V_DOUBLE:
+	    sscanf(tmp, "[DOUBLE]: %f\n", ((float *) &v->value.dval));
+	    break;
+	case V_STRING:
+	    sscanf(tmp, "[STRING]: %s\n", v->value.sval);
+	    break;
+	case V_BOOL:
+	    sscanf(tmp, "[BOOL]: %s\n", (v->value.boolean ? "true" : "false"));
+	    break;
+	case V_NIL:
+	    memcpy(tmp, "[NIL]: nil\n", 12);
+	    break;
+	default:
+	    memcpy(tmp, "[UNKNOWN]: <unknown type>\n", 27);
+	    break;
 	}
+	int len = strlen(tmp);
+	char *ret = malloc(len + 1);
+	memcpy(ret, tmp, len);
+	ret[len] = '\n';
+
+	return ret;
 }
 
 int truthy(struct eval *v)
@@ -314,9 +322,7 @@ struct eval eval_binary(struct expr *e)
 		v.type = V_NIL;
 		break;
 	}
-	printf("\nReturning value: ");
-	eval_to_str(&v);
-	printf("\n");
+	printf("\nReturning value: %s\n", eval_to_str(&v));
 	return v;
 }
 
@@ -344,3 +350,8 @@ struct eval evaluate(struct expr *e)
 		return v;
 	}
 }
+
+
+
+
+

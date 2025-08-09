@@ -9,7 +9,7 @@ struct eval
 	union val value;
 };
 
-void eval_to_str(struct eval *v);
+char *eval_to_str(struct eval *v);
 int truthy(struct eval *v);
 
 struct eval eval_literal(struct expr *e);
