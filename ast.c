@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "assert.h"
 
 static int i = 0;
 static struct t_vector *tokens;
@@ -27,22 +28,37 @@ struct expr
 	struct expr *right;
 };
 
-int assert(int check, char *msg)
+
+char *stmt_type_strs[] = {
+	"EXPR",
+	"PRINT"
+};
+
+enum stmt_type
 {
-	if (!check) {
-		printf("%s\n", msg);
-		return 1;
-	}
-	return 0;
-}
+	STMT_EXPR,
+	STMT_PRINT
+};
+
+struct stmt
+{
+	enum stmt_type type;
+	struct expr *e;
+};
 
 char *literal_expr_to_str(struct expr *e)
 {
-	if (assert(e != NULL && e->op->lexeme != NULL, "Null expr in literal_expr_to_str")) return NULL;
+	if (e == NULL || e->op->lexeme == NULL) {
+		printf("Null expr in literal_expr_to_str");
+		return NULL;
+	}
 
 	int  len  = strlen(e->op->lexeme);
 	char *ret = malloc(len + 1);
-	if (assert(ret != NULL, "Error allocating lexeme expr string")) return NULL;
+	if (ret == NULL) {
+		printf("Error allocating lexeme expr string");
+		return NULL;
+	}
 	char *ptr = ret;
 
 	memcpy(ptr, e->op->lexeme, len);
@@ -54,14 +70,22 @@ char *literal_expr_to_str(struct expr *e)
 
 char *unary_expr_to_str(struct expr *e, char *expr_str)
 {
-	if (assert(e && e->op->lexeme != NULL, "Null expr or lexeme in unary_expr_to_str")) return NULL;
-	if (assert(expr_str != NULL, "Null expr string in unary_expr_to_str")) return NULL;
+	if (!e || e->op->lexeme == NULL) {
+		printf("Null expr or lexeme in unary_expr_to_str");
+		return NULL;
+	}
+	if (expr_str == NULL) {
+		printf("Null expr string in unary_expr_to_str");
+		return NULL;
+	}
 
 	int  expr_len  = strlen(expr_str);
 	int  op_len    = strlen(e->op->lexeme);
 	char *ret      = malloc(expr_len + op_len + 4);
-	if (assert(ret != NULL, "Error allocating unary expr string"))
+	if (ret == NULL) {
+		printf("Error allocating unary expr string");
 		return NULL;
+	}
 
 	char *ptr      = ret;
 
@@ -79,14 +103,23 @@ char *unary_expr_to_str(struct expr *e, char *expr_str)
 
 char *binary_expr_to_str(struct expr *e, char *expr_str_l, char *expr_str_r)
 {
-	if (assert(e != NULL && e->op->lexeme != NULL, "Null expr or lexeme in binary_expr_to_str")) return NULL;
-	if (assert(expr_str_l != NULL && expr_str_r != NULL, "Null expr string in binary_expr_to_str")) return NULL;
+	if (e == NULL || e->op->lexeme == NULL) {
+		printf("Null expr or lexeme in binary_expr_to_str");
+		return NULL;
+	}
+	if (expr_str_l == NULL && expr_str_r == NULL) {
+		printf("Null expr string in binary_expr_to_str");
+		return NULL;
+	}
 
 	int  expr_len_l  = strlen(expr_str_l);
 	int  expr_len_r  = strlen(expr_str_r);
 	int  op_len      = strlen(e->op->lexeme);
 	char *ret        = malloc(expr_len_l + expr_len_r + op_len + 5);
-	if (assert(ret != NULL, "Error allocating binary expr string")) return NULL;
+	if (ret == NULL) {
+		printf("Error allocating binary expr string");
+		return NULL;
+	}
 	char *ptr = ret;
 
 	*ptr++ = '(';
@@ -106,15 +139,23 @@ char *binary_expr_to_str(struct expr *e, char *expr_str_l, char *expr_str_r)
 
 char *group_expr_to_str(struct expr *e, char *expr_str)
 {
-	if (assert(e != NULL, "Null expr in group_expr_to_str")) return NULL;
-	if (assert(expr_str != NULL, "Null expr string in group_expr_to_str")) return NULL;
+	if (e == NULL) {
+		printf("Null expr in group_expr_to_str");
+		return NULL;
+	}
+	if (expr_str == NULL) {
+		printf("Null expr string in group_expr_to_str");
+		return NULL;
+	}
 
 	char *op = "group";
 	int  expr_len  = strlen(expr_str);
 	int  op_len    = strlen(op);
 	char *ret      = malloc(op_len + expr_len + 4);
-	if (assert(ret != NULL, "Error allocating group expr string"))
+	if (ret == NULL) {
+		printf("Error allocating group expr string");
 		return NULL;
+	}
 	char *ptr      = ret;
 
 	*ptr++ = '(';
@@ -131,13 +172,17 @@ char *group_expr_to_str(struct expr *e, char *expr_str)
 
 char *expr_to_str(struct expr *e)
 {
-	if (assert(e != NULL, "Null expr in expr_to_str")) return NULL;
+	if (e == NULL) {
+		printf("Null expr in expr_to_str\n");
+		return NULL;
+	}
 	char *ret;
 	if (e->type == LITERAL)
 		return literal_expr_to_str(e);
 	else if (e->type == UNARY) {
 		char *expr_str = expr_to_str(e->right);
-		if (assert(expr_str != NULL, "Null expr string in unary expression")) {
+		if (expr_str == NULL) {
+			printf("Null expr string in unary expression");
 			free(expr_str);
 			return NULL;
 		}
@@ -146,7 +191,8 @@ char *expr_to_str(struct expr *e)
 	} else if (e->type == BINARY) {
 		char *expr_str_l = expr_to_str(e->left);
 		char *expr_str_r = expr_to_str(e->right);
-		if (assert(expr_str_l != NULL && expr_str_r != NULL, "Null expr string in binary expression")) {
+		if (expr_str_l == NULL || expr_str_r == NULL) {
+			printf("Null expr string in binary expression");
 			free(expr_str_l);
 			free(expr_str_r);
 			return NULL;
@@ -156,7 +202,8 @@ char *expr_to_str(struct expr *e)
 		free(expr_str_r);
 	} else if (e->type == GROUP) {
 		char *expr_str = expr_to_str(e->right);
-		if (assert(expr_str != NULL, "Null expr string in group expression")) {
+		if (expr_str == NULL) {
+			printf("Null expr string in group expression");
 			free(expr_str);
 			return NULL;
 		}
@@ -221,14 +268,13 @@ struct expr *primary()
 	if (!ret) return NULL;
 	struct token *op   = peek();
 	if (check(FALSE) || check(TRUE) || check(NUMBER) || check(STRING) || check(NIL)) {
-		printf("Literal expression, lexeme: %s\n", op->lexeme);
 		ret->type = LITERAL;
 		ret->left = NULL;
 		ret->op = get();
 		ret->right = NULL;
+		printf("Literal expression: %s\n", expr_to_str(ret));
 		return ret;
 	} else if (check(LEFT_PAREN)) {
-		printf("Group expression, lexeme: %s\n", op->lexeme);
 		get();
 		struct expr *e = expression();
 		if (!e) {
@@ -245,6 +291,7 @@ struct expr *primary()
 		ret->left = NULL;
 		ret->op = NULL;
 		ret->right = e;
+		printf("Group expression: %s\n", expr_to_str(ret));
 		return ret;
 	} else {
 		error(peek(), "Expected expression");
@@ -297,10 +344,11 @@ struct expr *factor()
 		}
 		tmp->type      = BINARY;
 		tmp->left      = e;
-		tmp->op  = op;
+		tmp->op        = op;
 		tmp->right     = right;
 		e = tmp;
 	}
+	printf("Factor expression: %s\n", expr_to_str(e));
 	return e;
 }
 
@@ -326,11 +374,12 @@ struct expr *term()
 		}
 		tmp->type      = BINARY;
 		tmp->left      = e;
-		tmp->op  = op;
+		tmp->op        = op;
 		tmp->right     = right;
 		e = tmp;
 	}
 	return e;
+	printf("Term expression: %s\n", expr_to_str(e));
 }
 
 struct expr *comparison()
@@ -339,6 +388,7 @@ struct expr *comparison()
 
 	while (check(GREATER) || check(GREATER_EQUAL) || check(LESS) || check(LESS_EQUAL)) {
 		struct token *op = get();
+		printf("Comparison operation, lexeme: %s\n", op->lexeme);
 		struct expr *right = term();
 		if (!right) {
 			free(e);
@@ -353,10 +403,11 @@ struct expr *comparison()
 		}
 		tmp->type      = BINARY;
 		tmp->left      = e;
-		tmp->op  = op;
+		tmp->op        = op;
 		tmp->right     = right;
 		e = tmp;
 	}
+	printf("Comparison expression: %s\n", expr_to_str(e));
 	return e;
 }
 
@@ -366,6 +417,7 @@ struct expr *equality()
 
 	while (check(EQUAL_EQUAL) || check(BANG_EQUAL)) {
 		struct token *op = get();
+		printf("Equality operation, lexeme: %s\n", op->lexeme);
 		struct expr *right = comparison();
 		if (!right) {
 			free(e);
@@ -384,6 +436,7 @@ struct expr *equality()
 		tmp->right     = right;
 		e = tmp;
 	}
+	printf("Equality expression: %s\n", expr_to_str(e));
 	return e;
 }
 
@@ -391,6 +444,31 @@ struct expr *expression()
 {
 	return equality();
 }
+
+struct stmt *print_stmt()
+{
+	struct stmt *st = malloc(sizeof(struct stmt));
+	st->type = STMT_PRINT;
+	st->e = expression();
+	consume(SEMICOLON);
+	return st;
+}
+
+struct stmt *statement()
+{
+	if (check(PRINT))
+		return print_stmt();
+
+	printf("Normal statement, generating expr\n");
+	struct stmt *st = malloc(sizeof(struct stmt));
+	st->type = STMT_EXPR;
+	st->e = expression();
+	printf("Expression: %s\n", expr_to_str(st->e));
+	printf("Consuming semicolon\n");
+	consume(SEMICOLON);
+	return st;
+}
+
 
 void free_expr(struct expr *e)
 {
@@ -400,28 +478,48 @@ void free_expr(struct expr *e)
 	free(e);
 }
 
-struct expr *ast(struct t_vector *in_tokens)
+struct stmt **ast(struct t_vector *in_tokens)
 {
+	int array_size = 64;
+	struct stmt **stmts = calloc(array_size, sizeof(struct stmt));
+
 	printf("Generating Abstract Syntax Tree\n");
 	tokens = in_tokens;
 	i = -1;
-	struct expr* e = expression();
-	if (!e) {
-		printf("Failed to generate Abstract Syntax Tree\n");
-		return NULL;
-	}
-	char *repr = expr_to_str(e);
-	if (!repr) {
-		printf("Failed to generate a string representation of the Abstract Syntax Tree\n");
-		return e;
+
+	int st_ix = 0;
+	while (peek()->type != END) {
+		if (st_ix == array_size - 1) {
+			struct stmt **new_stmts = malloc(sizeof(struct stmt) * array_size * 2);
+			memcpy(new_stmts, stmts, array_size * sizeof(struct stmt*));
+			array_size *= 2;
+			stmts = new_stmts;
+		}
+
+		printf("Generating statement number %d\n", st_ix + 1);
+		struct stmt* st = statement();
+		if (!st) {
+			printf("Failed to generate Abstract Syntax Tree\n");
+			return NULL;
+		} else {
+			printf("Generated statement number %d\n", st_ix + 1);
+			printf("Expr: %s\n\n", expr_to_str(st->e));
+		}
+		stmts[st_ix++] = st;
 	}
 
 	printf("Abstract Syntax Tree complete. View string representation below:\n\n");
-	printf("%s\n", repr);
-	printf("\nEnd of string representation.\n\n");
+	for (int i = 0; i < st_ix; i++) {
+		char *repr = expr_to_str(stmts[i]->e);
+		if (!repr) {
+			printf("Failed to generate a string representation of the Abstract Syntax Tree\n");
+			return stmts;
+		}
+		printf("Statement %d: %s ;\n", i + 1, repr);
+	}
 
-	free(repr);
-	return e;
+	printf("\nEnd of string representation.\n\n");
+	return stmts;
 }
 
 

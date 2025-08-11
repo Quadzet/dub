@@ -15,13 +15,22 @@ static void error_no_msg(int code)
 void run(char *buffer)
 {
 	struct t_vector *tokens = parse_buffer(buffer);
-	struct expr *e = ast(tokens);
-	struct eval v = evaluate(e);
-	printf("Evaluation complete!\nResult: ");
-	eval_to_str(&v);
+	struct stmt **stmts = ast(tokens);
+
+	int i = 0;
+	if (!stmts[i])
+		printf("stmt %d: null stmt\n", i + 1);
+	while (stmts[i]) {
+		if (!stmts[i]->e)
+			printf("stmt %d: null eval\n", i + 1);
+		fflush(stdout);
+		struct eval v = evaluate(stmts[i]->e);
+		printf("Evaluation complete!\nResult: %s\n", eval_to_str(&v));
+		free_expr(stmts[i]->e);
+		i++;
+	}
 	// intermediate repr...
 	// compilation...
-	free_expr(e);
 	// free_eval(v);
 }
 

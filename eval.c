@@ -12,28 +12,30 @@ char *eval_to_str(struct eval *v)
 	
 	switch (v->type) {
 	case V_INT:
-	    sscanf(tmp, "[INT]: %d\n", &v->value.ival);
+	    sprintf(tmp, "[INT]: %d\n", v->value.ival);
 	    break;
 	case V_DOUBLE:
-	    sscanf(tmp, "[DOUBLE]: %f\n", ((float *) &v->value.dval));
+	    sprintf(tmp, "[DOUBLE]: %f\n", v->value.dval);
 	    break;
 	case V_STRING:
-	    sscanf(tmp, "[STRING]: %s\n", v->value.sval);
+	    sprintf(tmp, "[STRING]: %s\n", v->value.sval);
 	    break;
 	case V_BOOL:
-	    sscanf(tmp, "[BOOL]: %s\n", (v->value.boolean ? "true" : "false"));
+	    sprintf(tmp, "[BOOL]: %s\n", (v->value.boolean ? "true" : "false"));
 	    break;
 	case V_NIL:
-	    memcpy(tmp, "[NIL]: nil\n", 12);
+	    strcpy(tmp, "[NIL]: nil\n");
 	    break;
 	default:
-	    memcpy(tmp, "[UNKNOWN]: <unknown type>\n", 27);
+	    strcpy(tmp, "[UNKNOWN]: <unknown type>\n");
 	    break;
 	}
+
 	int len = strlen(tmp);
 	char *ret = malloc(len + 1);
-	memcpy(ret, tmp, len);
-	ret[len] = '\n';
+	if (!ret) return NULL;
+
+	strcpy(ret, tmp);
 
 	return ret;
 }
@@ -264,6 +266,7 @@ struct eval eval_binary(struct expr *e)
 			v.value.boolean = left.value.dval < right.value.ival;
 			v.type = V_BOOL;
 		} else if (left.type == V_DOUBLE && right.type == V_DOUBLE) {
+			printf("double and double");
 			v.value.boolean = left.value.dval < right.value.dval;
 			v.type = V_BOOL;
 		} else {
@@ -322,18 +325,13 @@ struct eval eval_binary(struct expr *e)
 		v.type = V_NIL;
 		break;
 	}
-	printf("\nReturning value: %s\n", eval_to_str(&v));
+	printf("Returning value: %s\n", eval_to_str(&v));
 	return v;
 }
 
 struct eval evaluate(struct expr *e)
 {
-	printf("Evaluating expr:\n");
-	char *repr = expr_to_str(e);
-	if (!repr)
-		printf("<error in string representation>\n\n");
-	else
-		printf("%s\n\n", repr);
+	printf("Evaluating expr: %s\n", expr_to_str(e));
 
 	switch (e->type) {
 	case LITERAL:
