@@ -11,6 +11,8 @@ enum LOG_LEVEL {
 	ERROR
 };
 
+extern enum LOG_LEVEL LOG_LVL;
+
 void log_message(enum LOG_LEVEL lvl, char *msg, ...);
 
 #endif

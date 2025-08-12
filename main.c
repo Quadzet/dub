@@ -18,18 +18,7 @@ void run(char *buffer)
 	struct t_vector *tokens = parse_buffer(buffer);
 	struct stmt **stmts = ast(tokens);
 
-	int i = 0;
-	if (!stmts[i])
-		log_message(ERROR, "stmt %d: null stmt", i + 1);
-	while (stmts[i]) {
-		if (!stmts[i]->e)
-			log_message(ERROR, "stmt %d: null eval", i + 1);
-		fflush(stdout);
-		struct eval v = evaluate(stmts[i]->e);
-		log_message(DEBUG, "Evaluation complete, result: %s", eval_to_str(&v));
-		free_expr(stmts[i]->e);
-		i++;
-	}
+	interpret(stmts);
 
 	// intermediate repr...
 	// compilation...
@@ -93,12 +82,20 @@ void run_prompt()
 
 int main(int argc, char *argv[])
 {
-	// Tokenize statements(tuple) in a list
-
-	if (argc > 2) {
-		printf("Usage: LANGNAME [file.c]");
+	if (argc > 3) {
+		log_message(ERROR, "Usage: LANGNAME [-D] [file.dub]");
 		return 64;
+	} else if (argc == 3) {
+		if (!strcmp("-D", argv[1])) {
+			LOG_LVL = DEBUG;
+			log_message(DEBUG, "Scanning file %s...", argv[2]);
+			run_file(argv[2]);
+		} else {
+			log_message(ERROR, "Usage: LANGNAME [-D] [file.dub]");
+			return 64;
+		}
 	} else if (argc == 2) {
+
 		log_message(DEBUG, "Scanning file %s...", argv[1]);
 		run_file(argv[1]);
 	} else if (argc == 1) {

@@ -7,29 +7,30 @@ struct eval
 	union val value;
 };
 
-char *eval_to_str(struct eval *v)
+char *eval_to_str(struct eval *v, int include_type)
 {
 	char tmp[256];
 	
 	switch (v->type) {
 	case V_INT:
-	    sprintf(tmp, "[INT]: %d", v->value.ival);
-	    break;
+		sprintf(tmp, "%s%d", include_type ? "[INT]:" : "", v->value.ival);
+		break;
 	case V_DOUBLE:
-	    sprintf(tmp, "[DOUBLE]: %f", v->value.dval);
-	    break;
+		sprintf(tmp, "%s%f", include_type ? "[DOUBLE]: " : "", v->value.dval);
+		break;
 	case V_STRING:
-	    sprintf(tmp, "[STRING]: %s", v->value.sval);
-	    break;
+		sprintf(tmp, "%s%s", include_type ? "[STRING]: " : "", v->value.sval);
+		break;
 	case V_BOOL:
-	    sprintf(tmp, "[BOOL]: %s", (v->value.boolean ? "true" : "false"));
-	    break;
+		sprintf(tmp, "%s%s", (include_type ? "[BOOL]: " : ""),
+			(v->value.boolean ? "true" : "false"));
+		break;
 	case V_NIL:
-	    strcpy(tmp, "[NIL]: nil");
-	    break;
+		strcpy(tmp, "[NIL]: nil");
+		break;
 	default:
-	    strcpy(tmp, "[UNKNOWN]: <unknown type>");
-	    break;
+		strcpy(tmp, "[UNKNOWN]: <unknown type>");
+		break;
 	}
 
 	int len = strlen(tmp);
@@ -325,7 +326,7 @@ struct eval eval_binary(struct expr *e)
 		v.type = V_NIL;
 		break;
 	}
-	log_message(DEBUG, "Returning value: %s", eval_to_str(&v));
+	log_message(DEBUG, "Returning value: %s", eval_to_str(&v, 1));
 	return v;
 }
 
@@ -348,6 +349,37 @@ struct eval evaluate(struct expr *e)
 		return v;
 	}
 }
+
+void execute(struct stmt *st)
+{
+	struct eval v = evaluate(st->e);
+	log_message(DEBUG, "Evaluation complete, result: %s", eval_to_str(&v, 1));
+	switch (st->type) {
+	case STMT_PRINT:
+		printf("%s", eval_to_str(&v, 0));
+		break;
+	case STMT_EXPR:
+		break;
+	default:
+		log_message(ERROR, "Unhandled statement type");
+		return;
+	}
+}
+
+void interpret(struct stmt **stmts)
+{
+	int i = 0;
+	if (!stmts[i])
+		log_message(ERROR, "stmt %d: null stmt", i + 1);
+	while (stmts[i]) {
+		if (!stmts[i]->e)
+			log_message(ERROR, "stmt %d: null eval", i + 1);
+		execute(stmts[i]);
+		free_expr(stmts[i]->e);
+		i++;
+	}
+}
+
 
 
 

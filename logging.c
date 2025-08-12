@@ -15,7 +15,7 @@ enum LOG_LEVEL {
 	ERROR
 };
 
-enum LOG_LEVEL LOG_LVL = DEBUG;
+enum LOG_LEVEL LOG_LVL = INFO;
 
 void log_message(enum LOG_LEVEL lvl, char *msg, ...)
 {

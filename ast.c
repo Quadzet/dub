@@ -448,6 +448,7 @@ struct expr *expression()
 
 struct stmt *print_stmt()
 {
+	consume(PRINT);
 	struct stmt *st = malloc(sizeof(struct stmt));
 	st->type = STMT_PRINT;
 	st->e = expression();
