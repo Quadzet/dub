@@ -1,4 +1,5 @@
 #include "ast.h"
+#include "logging.h"
 
 struct eval
 {
@@ -12,22 +13,22 @@ char *eval_to_str(struct eval *v)
 	
 	switch (v->type) {
 	case V_INT:
-	    sprintf(tmp, "[INT]: %d\n", v->value.ival);
+	    sprintf(tmp, "[INT]: %d", v->value.ival);
 	    break;
 	case V_DOUBLE:
-	    sprintf(tmp, "[DOUBLE]: %f\n", v->value.dval);
+	    sprintf(tmp, "[DOUBLE]: %f", v->value.dval);
 	    break;
 	case V_STRING:
-	    sprintf(tmp, "[STRING]: %s\n", v->value.sval);
+	    sprintf(tmp, "[STRING]: %s", v->value.sval);
 	    break;
 	case V_BOOL:
-	    sprintf(tmp, "[BOOL]: %s\n", (v->value.boolean ? "true" : "false"));
+	    sprintf(tmp, "[BOOL]: %s", (v->value.boolean ? "true" : "false"));
 	    break;
 	case V_NIL:
-	    strcpy(tmp, "[NIL]: nil\n");
+	    strcpy(tmp, "[NIL]: nil");
 	    break;
 	default:
-	    strcpy(tmp, "[UNKNOWN]: <unknown type>\n");
+	    strcpy(tmp, "[UNKNOWN]: <unknown type>");
 	    break;
 	}
 
@@ -54,7 +55,7 @@ int truthy(struct eval *v)
 	case V_STRING:
 		return v->value.sval != NULL;
 	default:
-		printf("Unhandled value type in truthy\n");
+		log_message(ERROR, "Unhandled value type in truthy");
 		return 0;
 	}
 }
@@ -106,13 +107,13 @@ struct eval eval_binary(struct expr *e)
 	struct eval left = evaluate(e->left);
 	struct eval right = evaluate(e->right);
 
-	printf("Evaluating binary expr ");
+	log_message(DEBUG, "Evaluating binary expr ");
 	switch (e->op->type) {
 	case SLASH:
-		printf("division\n");
+		log_message(DEBUG, "division");
 		if (left.type == V_INT && right.type == V_INT) {
 			if (right.value.ival == 0) {
-				printf("Division by zero\n");
+				log_message(ERROR, "Division by zero");
 				v.type = V_NIL;
 				return v;
 			}
@@ -120,7 +121,7 @@ struct eval eval_binary(struct expr *e)
 			v.type = V_INT;
 		} else if (left.type == V_INT && right.type == V_DOUBLE) {
 			if (right.value.dval == 0) {
-				printf("Division by zero\n");
+				log_message(ERROR, "Division by zero");
 				v.type = V_NIL;
 				return v;
 			}
@@ -128,7 +129,7 @@ struct eval eval_binary(struct expr *e)
 			v.type = V_DOUBLE;
 		} else if (left.type == V_DOUBLE && right.type == V_INT) {
 			if (right.value.ival == 0) {
-				printf("Division by zero\n");
+				log_message(ERROR, "Division by zero");
 				v.type = V_NIL;
 				return v;
 			}
@@ -136,19 +137,19 @@ struct eval eval_binary(struct expr *e)
 			v.type = V_DOUBLE;
 		} else if (left.type == V_DOUBLE && right.type == V_DOUBLE) {
 			if (right.value.dval == 0) {
-				printf("Division by zero\n");
+				log_message(ERROR, "Division by zero");
 				v.type = V_NIL;
 				return v;
 			}
 			v.value.dval = left.value.dval / right.value.dval;
 			v.type = V_DOUBLE;
 		} else {
-			printf("Invalid types for division\n");
+			log_message(ERROR, "Invalid types for division");
 			v.type = V_NIL;
 		}
 		break;
 	case STAR:
-		printf("multiplication\n");
+		log_message(DEBUG, "multiplication");
 		if (left.type == V_INT && right.type == V_INT) {
 			v.value.ival = left.value.ival * right.value.ival;
 			v.type = V_INT;
@@ -162,12 +163,12 @@ struct eval eval_binary(struct expr *e)
 			v.value.dval = left.value.dval * right.value.dval;
 			v.type = V_DOUBLE;
 		} else {
-			printf("Invalid types for multiplication\n");
+			log_message(ERROR, "Invalid types for multiplication");
 			v.type = V_NIL;
 		}
 		break;
 	case MINUS:
-		printf("subtraction\n");
+		log_message(DEBUG, "subtraction");
 		if (left.type == V_INT && right.type == V_INT) {
 			v.value.ival = left.value.ival - right.value.ival;
 			v.type = V_INT;
@@ -181,12 +182,12 @@ struct eval eval_binary(struct expr *e)
 			v.value.dval = left.value.dval - right.value.dval;
 			v.type = V_DOUBLE;
 		} else {
-			printf("Invalid types for subtraction\n");
+			log_message(ERROR, "Invalid types for subtraction");
 			v.type = V_NIL;
 		}
 		break;
 	case PLUS:
-		printf("addition\n");
+		log_message(DEBUG, "addition");
 		if (left.type == V_INT && right.type == V_INT) {
 			v.value.ival = left.value.ival + right.value.ival;
 			v.type = V_INT;
@@ -210,13 +211,13 @@ struct eval eval_binary(struct expr *e)
 			v.value.sval = res;
 			v.type = V_STRING;
 		} else {
-			printf("Invalid types for addition\n");
+			log_message(ERROR, "Invalid types for addition");
 			v.type = V_NIL;
 		}
 
 		break;
 	case GREATER:
-		printf("greater comparison\n");
+		log_message(DEBUG, "greater comparison");
 		if (left.type == V_INT && right.type == V_INT) {
 			v.value.boolean = left.value.ival > right.value.ival;
 			v.type = V_BOOL;
@@ -230,13 +231,13 @@ struct eval eval_binary(struct expr *e)
 			v.value.boolean = left.value.dval > right.value.dval;
 			v.type = V_BOOL;
 		} else {
-			printf("Invalid types for comparison\n");
+			log_message(ERROR, "Invalid types for comparison");
 			v.type = V_NIL;
 		}
 
 		break;
 	case GREATER_EQUAL:
-		printf("greater or equal comparison\n");
+		log_message(DEBUG, "greater or equal comparison");
 		if (left.type == V_INT && right.type == V_INT) {
 			v.value.boolean = left.value.ival >= right.value.ival;
 			v.type = V_BOOL;
@@ -250,12 +251,12 @@ struct eval eval_binary(struct expr *e)
 			v.value.boolean = left.value.dval >= right.value.dval;
 			v.type = V_BOOL;
 		} else {
-			printf("Invalid types for comparison\n");
+			log_message(ERROR, "Invalid types for comparison");
 			v.type = V_NIL;
 		}
 		break;
 	case LESS:
-		printf("less than comparison\n");
+		log_message(DEBUG, "less than comparison");
 		if (left.type == V_INT && right.type == V_INT) {
 			v.value.boolean = left.value.ival < right.value.ival;
 			v.type = V_BOOL;
@@ -266,16 +267,15 @@ struct eval eval_binary(struct expr *e)
 			v.value.boolean = left.value.dval < right.value.ival;
 			v.type = V_BOOL;
 		} else if (left.type == V_DOUBLE && right.type == V_DOUBLE) {
-			printf("double and double");
 			v.value.boolean = left.value.dval < right.value.dval;
 			v.type = V_BOOL;
 		} else {
-			printf("Invalid types for comparison\n");
+			log_message(ERROR, "Invalid types for comparison");
 			v.type = V_NIL;
 		}
 		break;
 	case LESS_EQUAL:
-		printf("less than or equal comparison\n");
+		log_message(DEBUG, "less than or equal comparison");
 		if (left.type == V_INT && right.type == V_INT) {
 			v.value.boolean = left.value.ival <= right.value.ival;
 			v.type = V_BOOL;
@@ -289,12 +289,12 @@ struct eval eval_binary(struct expr *e)
 			v.value.boolean = left.value.dval <= right.value.dval;
 			v.type = V_BOOL;
 		} else {
-			printf("Invalid types for comparison\n");
+			log_message(ERROR, "Invalid types for comparison");
 			v.type = V_NIL;
 		}
 		break;
 	case EQUAL_EQUAL:
-		printf("equality comparison\n");
+		log_message(DEBUG, "equality comparison");
 		if (left.type == V_BOOL && right.type == V_BOOL) {
 			v.value.boolean = left.value.boolean == right.value.boolean;
 			v.type = V_BOOL;
@@ -317,21 +317,21 @@ struct eval eval_binary(struct expr *e)
 			v.value.boolean = left.value.null == right.value.null;
 			v.type = V_BOOL;
 		} else {
-			printf("Invalid types for comparison\n");
+			log_message(ERROR, "Invalid types for comparison");
 			v.type = V_NIL;
 		}
 	default:
-		printf("Unexpected op type in eval_binary\n");
+		log_message(ERROR, "Unexpected op type in eval_binary");
 		v.type = V_NIL;
 		break;
 	}
-	printf("Returning value: %s\n", eval_to_str(&v));
+	log_message(DEBUG, "Returning value: %s", eval_to_str(&v));
 	return v;
 }
 
 struct eval evaluate(struct expr *e)
 {
-	printf("Evaluating expr: %s\n", expr_to_str(e));
+	log_message(DEBUG, "Evaluating expr: %s", expr_to_str(e));
 
 	switch (e->type) {
 	case LITERAL:
@@ -343,7 +343,7 @@ struct eval evaluate(struct expr *e)
 	case BINARY:
 		return eval_binary(e);
 	default:
-		printf("Unhandled expr type in evaluate\n");
+		log_message(ERROR, "Unhandled expr type in evaluate");
 		struct eval v;
 		return v;
 	}

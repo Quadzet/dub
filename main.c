@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "eval.h"
+#include "logging.h"
 
 static void error(int code, char *msg)
 {
-	printf("Error %d: %s\r\n", code, msg);
+	log_message(ERROR, "Error %d: %s", code, msg);
 }
 
 static void error_no_msg(int code)
@@ -19,24 +20,27 @@ void run(char *buffer)
 
 	int i = 0;
 	if (!stmts[i])
-		printf("stmt %d: null stmt\n", i + 1);
+		log_message(ERROR, "stmt %d: null stmt", i + 1);
 	while (stmts[i]) {
 		if (!stmts[i]->e)
-			printf("stmt %d: null eval\n", i + 1);
+			log_message(ERROR, "stmt %d: null eval", i + 1);
 		fflush(stdout);
 		struct eval v = evaluate(stmts[i]->e);
-		printf("Evaluation complete!\nResult: %s\n", eval_to_str(&v));
+		log_message(DEBUG, "Evaluation complete, result: %s", eval_to_str(&v));
 		free_expr(stmts[i]->e);
 		i++;
 	}
+
 	// intermediate repr...
 	// compilation...
 	// free_eval(v);
+
+	printf("\n");
 }
 
 void run_file(char *path)
 {
-	printf("Opening file...\r\n");
+	log_message(DEBUG, "Opening file...");
 	int err_code;
 	FILE *fp = fopen(path, "r");
 	if ((err_code = fseek(fp, 0, SEEK_END)) != 0)
@@ -44,7 +48,7 @@ void run_file(char *path)
 	int file_size = ftell(fp);
 	if ((err_code = fseek(fp, 0, SEEK_SET)) != 0)
 		error(err_code, "fseek set error");
-	printf("Allocating buffer...\r\n");
+	log_message(DEBUG, "Allocating buffer...");
 	char *buffer =  malloc(file_size + 1);
 	if (buffer) {
 		fread(buffer, 1, file_size, fp);
@@ -95,10 +99,10 @@ int main(int argc, char *argv[])
 		printf("Usage: LANGNAME [file.c]");
 		return 64;
 	} else if (argc == 2) {
-		printf("Scanning file %s...\r\n", argv[1]);
+		log_message(DEBUG, "Scanning file %s...", argv[1]);
 		run_file(argv[1]);
 	} else if (argc == 1) {
-		printf("Running prompt...\r\n");
+		log_message(DEBUG, "Running prompt...");
 		run_prompt();
 	}
 }

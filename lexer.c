@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "logging.h"
 
 #define MAXLINE 10000
 
@@ -126,16 +127,6 @@ int keyword_tokens[] = {
 	WHILE
 };
 
-static void error(int code, char *msg)
-{
-	printf("Error %d: %s\r\n", code, msg);
-}
-
-static void error_no_msg(int code)
-{
-	error(code, "No message");
-}
-
 int hash(char *key)
 {
 	int i, hash = 0;
@@ -247,7 +238,7 @@ char *token_to_str(struct token *t)
 	}
 
 	if (n_chars < 0) {
-		error(SPRINTF_ERROR, "sprintf error in token_to_str");
+		log_message(ERROR, "sprintf error in token_to_str");
 		free(repr);
 		return NULL;
 	}
@@ -272,10 +263,7 @@ void free_t_vector(struct t_vector *vec)
 int push_back(struct t_vector *t_vec, struct token t)
 {
 	if (t_vec->size > t_vec->capacity) {
-		char err[256];
-		sprintf(err, "Invalid size for pushback. Size: %d, capacity: %d\r\n",
-			t_vec->size, t_vec->capacity);
-		error(PUSH_BACK_ERROR, err);
+		log_message(ERROR, "Invalid size for pushback. Size: %d, capacity: %d", t_vec->size, t_vec->capacity);
 		return 1;
 	} else if (t_vec->size == t_vec->capacity) {
 		struct token *new_array = malloc(sizeof(struct token) * t_vec->capacity * 2);
@@ -368,7 +356,7 @@ struct token number(char *buffer, int *i, int *line)
 	int len = *i - start;
 	char *num_str = malloc(len + 1);
 	if (!num_str) {
-		error(MALLOC_ERROR, "Failed to allocate memory for number");
+		log_message(ERROR, "Failed to allocate memory for number");
 		struct token t = { 0 };
 		return t;
 	}
@@ -393,12 +381,7 @@ struct token string(char *buffer, int *i, int *line)
 	}
 
 	if (buffer[*i] == '\0') {
-		char err_str[256];
-		snprintf(
-			err_str, sizeof(err_str),
-			"[%d] Unterminated string",
-			*line);
-		error(UNTERMINATED_STRING_ERROR, err_str);
+		log_message(ERROR, "[%d] Unterminated string", *line);
 		struct token t = { 0 };
 		return t;
 	}
@@ -409,7 +392,7 @@ struct token string(char *buffer, int *i, int *line)
 	// my string
 	char *literal = malloc(literal_len + 1);
 	if (!literal) {
-		error(MALLOC_ERROR, "Failed to allocate memory for string literal");
+		log_message(ERROR, "Failed to allocate memory for string literal");
 		struct token t = { 0 };
 		return t;
 	}
@@ -421,7 +404,7 @@ struct token string(char *buffer, int *i, int *line)
 	char *lexeme = malloc(lexeme_len + 1);
 	if (!lexeme) {
 		free(literal);
-		error(MALLOC_ERROR, "Failed to allocate memory for string lexeme");
+		log_message(ERROR, "Failed to allocate memory for string lexeme");
 		struct token t = { 0 };
 		return t;
 	}
@@ -511,11 +494,8 @@ int scan_token(char *buffer, struct token *t)
 				*t = identifier(buffer, &i, &line);
 				return line;
 			} else {
-				snprintf(
-					err_str, sizeof(err_str),
-					"[%d] Unexpected character: %c, ASCI code: %d",
+				log_message(ERROR, "[%d] Unexpected character: %c, ASCI code: %d",
 					line, c, c);
-				error(INVALID_CHAR_ERROR, err_str);
 				return 0;
 			}
 			break;
@@ -532,20 +512,20 @@ struct t_vector *parse_buffer(char *buffer)
 	t_vec->size = 0;
 	t_vec->capacity = T_VEC_SIZE;
 	
-	printf("Parsing buffer...\r\n");
+	log_message(DEBUG, "Parsing buffer...");
 	char c;
 	i = 0;
 	line = 1;
 	struct token t;
 	while (scan_token(buffer, &t)) {
-		printf("Scanned token %s, as %s.\r\n", token_strs[t.type], t.lexeme);
+		log_message(DEBUG, "Scanned token %s, as %s.", token_strs[t.type], t.lexeme);
 		int err = push_back(t_vec, t);
 		if (err != 0) {
-			printf("Error while parsing file, aborting.");
+			log_message(ERROR, "Error while parsing file, aborting.");
 			break;
 		}
 	}
-	printf("Parsing complete\n\n");
+	log_message(DEBUG, "Parsing complete\n");
 
 	return t_vec;
 }
