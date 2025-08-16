@@ -19,6 +19,7 @@ enum expr_type
 	UNARY,
 	BINARY,
 	LITERAL,
+	VARIABLE,
 };
 
 struct expr
@@ -38,12 +39,14 @@ char *stmt_type_strs[] = {
 enum stmt_type
 {
 	STMT_EXPR,
-	STMT_PRINT
+	STMT_PRINT,
+	STMT_DECL
 };
 
 struct stmt
 {
 	enum stmt_type type;
+	char *name;
 	struct expr *e;
 };
 
@@ -108,7 +111,7 @@ char *binary_expr_to_str(struct expr *e, char *expr_str_l, char *expr_str_r)
 		log_message(ERROR, "Null expr or lexeme in binary_expr_to_str");
 		return NULL;
 	}
-	if (expr_str_l == NULL && expr_str_r == NULL) {
+	if (expr_str_l == NULL || expr_str_r == NULL) {
 		log_message(ERROR, "Null expr string in binary_expr_to_str");
 		return NULL;
 	}
@@ -171,6 +174,28 @@ char *group_expr_to_str(struct expr *e, char *expr_str)
 	return ret;
 }
 
+char *variable_expr_to_str(struct expr *e)
+{
+	if (e == NULL || e->op->lexeme == NULL) {
+		log_message(ERROR, "Null expr in variable_expr_to_str");
+		return NULL;
+	}
+
+	int  len  = strlen(e->op->lexeme);
+	char *ret = malloc(len + 1);
+	if (ret == NULL) {
+		log_message(ERROR, "Error allocating lexeme expr string");
+		return NULL;
+	}
+	char *ptr = ret;
+
+	memcpy(ptr, e->op->lexeme, len);
+	ptr += len;
+	*ptr = '\0';
+
+	return ret;
+}
+
 char *expr_to_str(struct expr *e)
 {
 	if (e == NULL) {
@@ -184,7 +209,6 @@ char *expr_to_str(struct expr *e)
 		char *expr_str = expr_to_str(e->right);
 		if (expr_str == NULL) {
 			log_message(ERROR, "Null expr string in unary expression");
-			free(expr_str);
 			return NULL;
 		}
 		ret = unary_expr_to_str(e, expr_str);
@@ -205,11 +229,12 @@ char *expr_to_str(struct expr *e)
 		char *expr_str = expr_to_str(e->right);
 		if (expr_str == NULL) {
 			log_message(ERROR, "Null expr string in group expression");
-			free(expr_str);
 			return NULL;
 		}
 		ret = group_expr_to_str(e, expr_str);
 		free(expr_str);
+	} else if (e->type == VARIABLE) {
+		return variable_expr_to_str(e);
 	} else
 		ret = NULL;
 
@@ -253,9 +278,7 @@ static struct token *consume(enum token_type type)
 	if (check(type)) {
 		return get();
 	} else {
-		char err[256];
-		log_message(ERROR, err, "Unexpected token: %s", peek()->lexeme);
-		error(peek(), err);
+		log_message(ERROR, "Unexpected token: %s", peek()->lexeme);
 		return NULL;
 	}
 }
@@ -293,6 +316,13 @@ struct expr *primary()
 		ret->op = NULL;
 		ret->right = e;
 		log_message(DEBUG, "Group expression: %s", expr_to_str(ret));
+		return ret;
+	} else if (check(IDENTIFIER)) {
+		ret->type = VARIABLE;
+		ret->left = NULL;
+		ret->op = get();
+		ret->right = NULL;
+		log_message(DEBUG, "Variable expression: %s", expr_to_str(ret));
 		return ret;
 	} else {
 		error(peek(), "Expected expression");
@@ -379,8 +409,8 @@ struct expr *term()
 		tmp->right     = right;
 		e = tmp;
 	}
-	return e;
 	log_message(DEBUG, "Term expression: %s", expr_to_str(e));
+	return e;
 }
 
 struct expr *comparison()
@@ -448,11 +478,12 @@ struct expr *expression()
 
 struct stmt *print_stmt()
 {
+	log_message(DEBUG, "Print statement, generating expr");
 	consume(PRINT);
 	struct stmt *st = malloc(sizeof(struct stmt));
 	st->type = STMT_PRINT;
 	st->e = expression();
-	consume(SEMICOLON);
+	log_message(DEBUG, "Expression: %s", expr_to_str(st->e));
 	return st;
 }
 
@@ -466,9 +497,45 @@ struct stmt *statement()
 	st->type = STMT_EXPR;
 	st->e = expression();
 	log_message(DEBUG, "Expression: %s", expr_to_str(st->e));
-	log_message(DEBUG, "Consuming semicolon");
-	consume(SEMICOLON);
 	return st;
+}
+
+struct stmt *declaration()
+{
+	if (check(VAR)) {
+		log_message(DEBUG, "Decl statement");
+		consume(VAR);
+		struct stmt *st = malloc(sizeof(struct stmt));
+		struct token *t = consume(IDENTIFIER);
+		if (!t) {
+			free(st);
+			return NULL;
+		}
+		st->name = strdup(t->lexeme);
+		if (!st->name) {
+			free(st);
+			return NULL;
+		}
+
+		if (check(EQUAL)) {
+			consume(EQUAL);
+			log_message(DEBUG, "Generating initializer expression");
+			st->e = expression();
+		} else {
+			st->e = NULL;
+		}
+
+		log_message(DEBUG, "Binding identifier name");
+		st->type = STMT_DECL;
+		log_message(DEBUG, "Consuming semicolon");
+		consume(SEMICOLON);
+		return st;
+	} else {
+		struct stmt *st = statement();
+		log_message(DEBUG, "Consuming semicolon");
+		consume(SEMICOLON);
+		return st;
+	}
 }
 
 
@@ -483,7 +550,7 @@ void free_expr(struct expr *e)
 struct stmt **ast(struct t_vector *in_tokens)
 {
 	int array_size = 64;
-	struct stmt **stmts = calloc(array_size, sizeof(struct stmt));
+	struct stmt **stmts = calloc(array_size, sizeof(struct stmt *));
 
 	log_message(DEBUG, "Generating Abstract Syntax Tree");
 	tokens = in_tokens;
@@ -491,15 +558,20 @@ struct stmt **ast(struct t_vector *in_tokens)
 
 	int st_ix = 0;
 	while (peek()->type != END) {
-		if (st_ix == array_size - 1) {
-			struct stmt **new_stmts = malloc(sizeof(struct stmt) * array_size * 2);
+		if (st_ix >= array_size) {
+			struct stmt **new_stmts = malloc(sizeof(struct stmt *) * array_size * 2);
+			if (!new_stmts) {
+				log_message(ERROR, "Failed to reallocate statements array");
+				return NULL;
+			}
 			memcpy(new_stmts, stmts, array_size * sizeof(struct stmt*));
-			array_size *= 2;
+			free(stmts);
 			stmts = new_stmts;
+			array_size *= 2;
 		}
 
 		log_message(DEBUG, "Generating statement number %d", st_ix + 1);
-		struct stmt* st = statement();
+		struct stmt* st = declaration();
 		if (!st) {
 			log_message(ERROR, "Failed to generate Abstract Syntax Tree");
 			return NULL;
@@ -519,9 +591,13 @@ struct stmt **ast(struct t_vector *in_tokens)
 		}
 		log_message(DEBUG, "Statement %d: %s ;", i + 1, repr);
 	}
-
 	log_message(DEBUG, "End of string representation.\n");
+
+	for (int i = 0; i < st_ix; i++) {
+		log_message(DEBUG, "Before return - Statement %d expr pointer: %p", i + 1, (void*)stmts[i]->e);
+		if (stmts[i]->e) {
+			log_message(DEBUG, "Before return - Statement %d expr type: %d", i + 1, stmts[i]->e->type);
+		}
+	}
 	return stmts;
 }
-
-

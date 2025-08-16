@@ -1,11 +1,7 @@
 #include "ast.h"
 #include "logging.h"
+#include "state.h"
 
-struct eval
-{
-	enum val_type type;
-	union val value;
-};
 
 char *eval_to_str(struct eval *v, int include_type)
 {

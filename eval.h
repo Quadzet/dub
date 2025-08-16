@@ -2,12 +2,8 @@
 #define INTERPRET_H
 
 #include "ast.h"
-
-struct eval
-{
-	enum val_type type;
-	union val value;
-};
+#include "logging.h"
+#include "state.h"
 
 char *eval_to_str(struct eval *v);
 int truthy(struct eval *v);

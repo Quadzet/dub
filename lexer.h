@@ -39,13 +39,6 @@ enum token_type {
 	END,
 };
 
-struct hash_node
-{
-	struct hash_node *next;
-	char *key;
-	char *val;
-};
-
 enum val_type {
 	V_INT, V_DOUBLE, V_STRING, V_NIL, V_BOOL
 };
@@ -74,9 +67,6 @@ struct token
 	enum val_type value_type;
 };
 
-int hash(char *key);
-int contains(struct hash_node *set[], char *key);
-int add(struct hash_node *set[], char *key, char *val);
 char *token_to_str(struct token *t);
 int push_back(struct t_vector *t_vec, struct token t);
 

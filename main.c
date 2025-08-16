@@ -17,7 +17,16 @@ void run(char *buffer)
 {
 	struct t_vector *tokens = parse_buffer(buffer);
 	struct stmt **stmts = ast(tokens);
+	log_message(DEBUG, "Immediately after ast() - stmts pointer: %p", (void*)stmts);
+	log_message(DEBUG, "Immediately after ast() - stmts[0] pointer: %p", (void*)stmts[0]);
+	log_message(DEBUG, "Immediately after ast() - stmts[0]->e pointer: %p", (void*)stmts[0]->e);
 
+	for (int i = 0; i < 2; i++) {
+		log_message(DEBUG, "After return - Statement %d expr pointer: %p", i + 1, (void*)stmts[i]->e);
+		if (stmts[i]->e) {
+			log_message(DEBUG, "After return - Statement %d expr type: %d", i + 1, stmts[i]->e->type);
+		}
+	}
 	interpret(stmts);
 
 	// intermediate repr...

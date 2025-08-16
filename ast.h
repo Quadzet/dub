@@ -32,6 +32,7 @@ enum stmt_type
 struct stmt
 {
 	enum stmt_type type;
+	char *name;
 	struct expr *e;
 };
 

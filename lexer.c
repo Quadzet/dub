@@ -127,61 +127,6 @@ int keyword_tokens[] = {
 	WHILE
 };
 
-int hash(char *key)
-{
-	int i, hash = 0;
-	char c;
-	for (i = 0; (c = key[i]) != '\0'; i++)
-		hash += c;
-	return (hash * 75948) % 100;
-}
-
-#define HASH_SIZE 100
-struct hash_node
-{
-	struct hash_node *next;
-	char *key;
-	char *val;
-};
-
-int contains(struct hash_node *set[], char *key)
-{
-	int ix = hash(key);
-	struct hash_node *n = set[ix];
-	while (n) {
-		if (strcmp(key, n->key) == 0)
-			return 1;
-		n = n->next;
-			
-	}
-	return 0;
-}
-
-int add(struct hash_node *set[], char *key, char *val)
-{
-	int ix = hash(key);
-
-	struct hash_node *n = set[ix];
-	while (n) {
-		if (strcmp(key, n->key) == 0) {
-			free(n->val);
-			n->val = strdup(val);
-			return 1;
-		}
-		n = n->next;
-	}
-
-	struct hash_node *new_n = malloc(sizeof(struct hash_node));
-	if (!new_n)
-		return 0;
-	new_n->key = strdup(key);
-	new_n->val = strdup(val);
-	new_n->next = set[ix];
-	set[ix] = new_n;
-
-	return 1;
-}
-
 enum val_type {
 	V_INT, V_DOUBLE, V_STRING, V_NIL, V_BOOL
 };

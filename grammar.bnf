@@ -1,4 +1,7 @@
-program     -> statement* EOF ;
+program     -> declaration* EOF ;
+declaration -> var_decl
+               | statement ;
+var_decl    -> "var" IDENTIFIER ( "=" expression )? ";" ;
 statement   -> expr_stmt
                | print_stmt ;
 expr_stmt   -> expression ";" ;
@@ -11,4 +14,5 @@ factor      -> unary ( ( "/" | "*" ) unary)* ;
 unary       -> ( "!" | "-" ) unary
                | primary ;
 primary     -> NUMBER | STRING | "true" | "false" | "null" 
-               | "(" expression ")" ;
+               | "(" expression ")" 
+	       | IDENTIFIER ;
