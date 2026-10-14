@@ -201,6 +201,41 @@ struct t_vector
 void free_t_vector(struct t_vector *vec)
 {
 	if (!vec) return;
+	for (int i = 0; i < vec->size; i++) {
+		switch(vec->array[i].type)
+		{
+		// Every keyword needs to have its lexeme freed.
+		// This should probably be done in a smarter way, but for
+		// now we simply list them all. A flag or an automatic test
+		// would be good.
+		case IDENTIFIER:
+		case NUMBER:
+		case AND:
+		case CLASS:
+		case ELSE:
+		case FALSE:
+		case FOR:
+		case FUN:
+		case IF:
+		case NIL:
+		case OR:
+		case PRINT:
+		case RETURN:
+		case SUPER:
+		case THIS:
+		case TRUE:
+		case VAR:
+		case WHILE:
+			free(vec->array[i].lexeme);
+			break;
+		case STRING:
+			free(vec->array[i].lexeme);
+			free(vec->array[i].value.sval);
+			break;
+		default:
+			break;
+		}
+	}
 	free(vec->array);
 	free(vec);
 }
@@ -211,7 +246,7 @@ int push_back(struct t_vector *t_vec, struct token t)
 		log_message(ERROR, "Invalid size for pushback. Size: %d, capacity: %d", t_vec->size, t_vec->capacity);
 		return 1;
 	} else if (t_vec->size == t_vec->capacity) {
-		struct token *new_array = malloc(sizeof(struct token) * t_vec->capacity * 2);
+		struct token *new_array = calloc(t_vec->capacity * 2, sizeof(struct token));
 		if (!new_array) return 1;
 
 		memcpy(new_array, t_vec->array, t_vec->size * sizeof(struct token));
@@ -261,7 +296,6 @@ struct token identifier(char *buffer, int *i, int *line)
 
 	if (!type) {
 		type = IDENTIFIER;
-		v.sval = identifier_str;
 		vtype = V_STRING;
 	} else {
 		switch (type) {
@@ -278,7 +312,6 @@ struct token identifier(char *buffer, int *i, int *line)
 			vtype = V_NIL;
 			break;
 		default:
-			v.sval = identifier_str;
 			vtype = V_STRING;
 			break;
 		}
@@ -451,7 +484,7 @@ int scan_token(char *buffer, struct token *t)
 
 struct t_vector *parse_buffer(char *buffer)
 {
-	struct token *tmp = malloc(T_VEC_SIZE);
+	struct token *tmp = calloc(T_VEC_SIZE, 1);
 	struct t_vector *t_vec = malloc(sizeof(struct t_vector));
 	t_vec->array = tmp;
 	t_vec->size = 0;

@@ -55,6 +55,7 @@ struct stmt *print_stmt();
 struct stmt *statement();
 
 void free_expr(struct expr *e);
+void free_stmts(struct stmt **st);
 struct stmt **ast(struct t_vector *in_tokens);
 
 #endif

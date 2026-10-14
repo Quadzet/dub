@@ -349,17 +349,22 @@ struct eval evaluate(struct expr *e)
 void execute(struct stmt *st)
 {
 	struct eval v = evaluate(st->e);
-	log_message(DEBUG, "Evaluation complete, result: %s", eval_to_str(&v, 1));
+	char *debug_str = eval_to_str(&v, 1);
+	char *display_str = eval_to_str(&v, 0);
+	log_message(DEBUG, "Evaluation complete, result: %s", debug_str);
 	switch (st->type) {
 	case STMT_PRINT:
-		printf("%s", eval_to_str(&v, 0));
+		printf("%s", display_str);
 		break;
 	case STMT_EXPR:
 		break;
 	default:
 		log_message(ERROR, "Unhandled statement type");
-		return;
 	}
+
+	free(debug_str);
+	free(display_str);
+	return;
 }
 
 void interpret(struct stmt **stmts)
@@ -371,7 +376,6 @@ void interpret(struct stmt **stmts)
 		if (!stmts[i]->e)
 			log_message(ERROR, "stmt %d: null eval", i + 1);
 		execute(stmts[i]);
-		free_expr(stmts[i]->e);
 		i++;
 	}
 }

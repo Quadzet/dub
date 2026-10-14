@@ -547,6 +547,18 @@ void free_expr(struct expr *e)
 	free(e);
 }
 
+void free_stmts(struct stmt **st)
+{
+	log_message(DEBUG, "Freeing stmts");
+	if (!st) return;
+	for (int i = 0; st[i]; i++) {
+		if (st[i]->name) free(st[i]->name);
+		free_expr(st[i]->e);
+		free(st[i]);
+	}
+	free(st);
+}
+
 struct stmt **ast(struct t_vector *in_tokens)
 {
 	int array_size = 64;
@@ -558,8 +570,9 @@ struct stmt **ast(struct t_vector *in_tokens)
 
 	int st_ix = 0;
 	while (peek()->type != END) {
+		// Reallocate array in the case of overflow.
 		if (st_ix >= array_size) {
-			struct stmt **new_stmts = malloc(sizeof(struct stmt *) * array_size * 2);
+			struct stmt **new_stmts = calloc(array_size * 2, sizeof(struct stmt *));
 			if (!new_stmts) {
 				log_message(ERROR, "Failed to reallocate statements array");
 				return NULL;

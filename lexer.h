@@ -67,6 +67,7 @@ struct token
 	enum val_type value_type;
 };
 
+void free_t_vector(struct t_vector *vec);
 char *token_to_str(struct token *t);
 int push_back(struct t_vector *t_vec, struct token t);
 

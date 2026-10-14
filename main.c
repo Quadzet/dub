@@ -32,6 +32,10 @@ void run(char *buffer)
 	// intermediate repr...
 	// compilation...
 	// free_eval(v);
+	
+
+	free_t_vector(tokens);
+	free_stmts(stmts);
 
 	printf("\n");
 }
@@ -47,6 +51,7 @@ void run_file(char *path)
 	if ((err_code = fseek(fp, 0, SEEK_SET)) != 0)
 		error(err_code, "fseek set error");
 	log_message(DEBUG, "Allocating buffer...");
+
 	char *buffer =  malloc(file_size + 1);
 	if (buffer) {
 		fread(buffer, 1, file_size, fp);
@@ -60,6 +65,8 @@ void run_file(char *path)
 	}
 
 	run(buffer);
+
+	free(buffer);
 }
 
 int read_line(char *s)
