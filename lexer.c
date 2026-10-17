@@ -200,6 +200,7 @@ struct t_vector
 
 void free_t_vector(struct t_vector *vec)
 {
+	log_message(DEBUG, "Freeing tokens vector");
 	if (!vec) return;
 	for (int i = 0; i < vec->size; i++) {
 		switch(vec->array[i].type)

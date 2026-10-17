@@ -33,7 +33,8 @@ struct expr
 
 char *stmt_type_strs[] = {
 	"EXPR",
-	"PRINT"
+	"PRINT",
+	"DECL"
 };
 
 enum stmt_type
@@ -349,6 +350,7 @@ struct expr *unary()
 		e->op  = op;
 		e->right     = right;
 		return e;
+		log_message(DEBUG, "Unary expression: %s", expr_to_str(e));
 	}
 	return primary();
 }
@@ -378,8 +380,8 @@ struct expr *factor()
 		tmp->op        = op;
 		tmp->right     = right;
 		e = tmp;
+		log_message(DEBUG, "Factor expression: %s", expr_to_str(e));
 	}
-	log_message(DEBUG, "Factor expression: %s", expr_to_str(e));
 	return e;
 }
 
@@ -408,8 +410,8 @@ struct expr *term()
 		tmp->op        = op;
 		tmp->right     = right;
 		e = tmp;
+		log_message(DEBUG, "Term expression: %s", expr_to_str(e));
 	}
-	log_message(DEBUG, "Term expression: %s", expr_to_str(e));
 	return e;
 }
 
@@ -437,8 +439,8 @@ struct expr *comparison()
 		tmp->op        = op;
 		tmp->right     = right;
 		e = tmp;
+		log_message(DEBUG, "Comparison expression: %s", expr_to_str(e));
 	}
-	log_message(DEBUG, "Comparison expression: %s", expr_to_str(e));
 	return e;
 }
 
@@ -466,8 +468,8 @@ struct expr *equality()
 		tmp->op  = op;
 		tmp->right     = right;
 		e = tmp;
+		log_message(DEBUG, "Equality expression: %s", expr_to_str(e));
 	}
-	log_message(DEBUG, "Equality expression: %s", expr_to_str(e));
 	return e;
 }
 
@@ -549,14 +551,23 @@ void free_expr(struct expr *e)
 
 void free_stmts(struct stmt **st)
 {
-	log_message(DEBUG, "Freeing stmts");
+	log_message(DEBUG, "Freeing statements");
 	if (!st) return;
 	for (int i = 0; st[i]; i++) {
-		if (st[i]->name) free(st[i]->name);
+		log_message(DEBUG, "Freeing statement %d", i + 1);
+		// DECL statements have a name, the others don't.
+		switch (st[i]->type) {
+			case STMT_DECL:
+			if (st[i]->name != NULL) free(st[i]->name);
+			default:
+			break;
+		}
+		log_message(DEBUG, "Freeing statement %d's expression", i + 1);
 		free_expr(st[i]->e);
 		free(st[i]);
 	}
 	free(st);
+	log_message(DEBUG, "All statements freed");
 }
 
 struct stmt **ast(struct t_vector *in_tokens)
@@ -606,11 +617,5 @@ struct stmt **ast(struct t_vector *in_tokens)
 	}
 	log_message(DEBUG, "End of string representation.\n");
 
-	for (int i = 0; i < st_ix; i++) {
-		log_message(DEBUG, "Before return - Statement %d expr pointer: %p", i + 1, (void*)stmts[i]->e);
-		if (stmts[i]->e) {
-			log_message(DEBUG, "Before return - Statement %d expr type: %d", i + 1, stmts[i]->e->type);
-		}
-	}
 	return stmts;
 }

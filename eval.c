@@ -354,7 +354,7 @@ void execute(struct stmt *st)
 	log_message(DEBUG, "Evaluation complete, result: %s", debug_str);
 	switch (st->type) {
 	case STMT_PRINT:
-		printf("%s", display_str);
+		printf("%s\n", display_str);
 		break;
 	case STMT_EXPR:
 		break;
