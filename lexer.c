@@ -415,49 +415,49 @@ int scan_token(char *buffer, struct token *t)
 		case ' ':
 			break;
 
-		case '(': *t = (struct token) { LEFT_PAREN, "(", line }; return line;
-		case ')': *t = (struct token) { RIGHT_PAREN, ")", line }; return line;
-		case '{': *t = (struct token) { LEFT_BRACE, "{", line }; return line;
-		case '}': *t = (struct token) { RIGHT_BRACE, "}", line }; return line;
-		case '[': *t = (struct token) { LEFT_BRACKET, "[", line }; return line;
-		case ']': *t = (struct token) { RIGHT_BRACKET, "]", line }; return line;
-		case ',': *t = (struct token) { COMMA, ",", line }; return line;
-		case '.': *t = (struct token) { DOT, ".", line }; return line;
-		case '-': *t = (struct token) { MINUS, "-", line }; return line;
-		case '+': *t = (struct token) { PLUS, "+", line }; return line;
-		case ';': *t = (struct token) { SEMICOLON, ";", line }; return line;
-		case ':': *t = (struct token) { COLON, ":", line }; return line;
-		case '*': *t = (struct token) { STAR, "*", line }; return line;
+		case '(': *t = (struct token) { LEFT_PAREN, "(", line , { 0 }, V_NIL }; return line;
+		case ')': *t = (struct token) { RIGHT_PAREN, ")", line , { 0 }, V_NIL }; return line;
+		case '{': *t = (struct token) { LEFT_BRACE, "{", line , { 0 }, V_NIL }; return line;
+		case '}': *t = (struct token) { RIGHT_BRACE, "}", line , { 0 }, V_NIL}; return line;
+		case '[': *t = (struct token) { LEFT_BRACKET, "[", line , { 0 }, V_NIL }; return line;
+		case ']': *t = (struct token) { RIGHT_BRACKET, "]", line , { 0 }, V_NIL }; return line;
+		case ',': *t = (struct token) { COMMA, ",", line , { 0 }, V_NIL }; return line;
+		case '.': *t = (struct token) { DOT, ".", line , { 0 }, V_NIL }; return line;
+		case '-': *t = (struct token) { MINUS, "-", line , { 0 }, V_NIL }; return line;
+		case '+': *t = (struct token) { PLUS, "+", line , { 0 }, V_NIL }; return line;
+		case ';': *t = (struct token) { SEMICOLON, ";", line , { 0 }, V_NIL }; return line;
+		case ':': *t = (struct token) { COLON, ":", line , { 0 }, V_NIL }; return line;
+		case '*': *t = (struct token) { STAR, "*", line , { 0 }, V_NIL }; return line;
 
 		case '/':
 			if (match(buffer, &i, '/')) {
 				while (buffer[i++] != '\n' && buffer[i] != '\0')
 					;
 			} else {
-				*t = (struct token) { SLASH, "/", line };
+				*t = (struct token) { SLASH, "/", line , { 0 }, V_NIL };
 				return line;
 			}
 			break;
 		case '!':
 			*t = match(buffer, &i, '=')
-				? (struct token) { BANG_EQUAL, "", line }
-				: (struct token) { BANG, "!", line };
+				? (struct token) { BANG_EQUAL, "", line , { 0 }, V_NIL }
+				: (struct token) { BANG, "!", line , { 0 }, V_NIL };
 			return line;
 		case '=':
 			*t = match(buffer, &i, '=')
-				? (struct token) { EQUAL_EQUAL, "==", line }
-				: (struct token) { EQUAL, "=", line };
+				? (struct token) { EQUAL_EQUAL, "==", line , { 0 }, V_NIL }
+				: (struct token) { EQUAL, "=", line , { 0 }, V_NIL };
 			return line;
 		case '<':
 			*t = match(buffer, &i, '=')
-				? (struct token) { LESS_EQUAL, "<=", line }
-				: (struct token) { LESS, "<", line };
+				? (struct token) { LESS_EQUAL, "<=", line , { 0 }, V_NIL }
+				: (struct token) { LESS, "<", line , { 0 }, V_NIL };
 			return line;
 
 		case '>':
 			*t = match(buffer, &i, '=')
-				? (struct token) { GREATER_EQUAL, ">=", line }
-				: (struct token) { GREATER, ">", line };
+				? (struct token) { GREATER_EQUAL, ">=", line , { 0 }, V_NIL }
+				: (struct token) { GREATER, ">", line , { 0 }, V_NIL };
 			return line;
 
 

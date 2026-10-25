@@ -352,7 +352,7 @@ static void error(struct token *t, char *msg)
 static struct token *peek()
 {
 	if (i + 1 >= tokens->size) {
-		static struct token end_token = { END, "", -1 };
+		static struct token end_token = { END, "", -1 , { 0 }, V_NIL };
 		return &end_token;
 	}
 	return &tokens->array[i+1];
@@ -361,7 +361,7 @@ static struct token *peek()
 static struct token *get()
 {
 	if (i + 1 >= tokens->size) {
-		static struct token end_token = { END, "", -1 };
+		static struct token end_token = { END, "", -1 , { 0 }, V_NIL };
 		return &end_token;
 	}
 	return &tokens->array[++i];
