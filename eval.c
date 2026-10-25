@@ -1,41 +1,64 @@
+#include <stdio.h>
+#include <stdarg.h>
 #include "ast.h"
 #include "logging.h"
 #include "state.h"
 
+char *eval_str(char *msg, ...)
+{
+	// measure_args are used to measure str len.
+	// print_args are used to sprintf to str.
+	va_list measure_args, print_args;
+	va_start(measure_args, msg);
+	va_copy(print_args, measure_args);
+
+	int len = vsnprintf(NULL, 0, msg, measure_args);
+	char *str = calloc(len + 1, sizeof(char));
+	if (str == NULL) {
+		log_message(ERROR, "Error allocating eval str");
+		va_end(print_args);
+		va_end(measure_args);
+		return NULL;
+	}
+
+	vsnprintf(str, len + 1, msg, print_args);
+	va_end(print_args);
+	va_end(measure_args);
+
+	return str;
+}
 
 char *eval_to_str(struct eval *v, int include_type)
 {
-	char tmp[256];
-	
+	char *str = NULL;
 	switch (v->type) {
 	case V_INT:
-		sprintf(tmp, "%s%d", include_type ? "[INT]:" : "", v->value.ival);
+		str = eval_str("%s%d", include_type ? "[INT]: " : "",
+				v->value.ival);
 		break;
 	case V_DOUBLE:
-		sprintf(tmp, "%s%f", include_type ? "[DOUBLE]: " : "", v->value.dval);
+		str = eval_str("%s%f", include_type ? "[DOUBLE]: " : "",
+				v->value.dval);
 		break;
 	case V_STRING:
-		sprintf(tmp, "%s%s", include_type ? "[STRING]: " : "", v->value.sval);
+		str = eval_str("%s%s", include_type ? "[STRING]: " : "",
+				v->value.sval);
 		break;
 	case V_BOOL:
-		sprintf(tmp, "%s%s", (include_type ? "[BOOL]: " : ""),
-			(v->value.boolean ? "true" : "false"));
+		str = eval_str("%s%s", (include_type ? "[BOOL]: " : ""),
+				(v->value.boolean ? "true" : "false"));
 		break;
 	case V_NIL:
-		strcpy(tmp, "[NIL]: nil");
+		str = eval_str("%s%s", (include_type ? "[NIL]: " : ""),
+				"nil");
 		break;
 	default:
-		strcpy(tmp, "[UNKNOWN]: <unknown type>");
+		str = eval_str("%s%s", (include_type ? "[UNKNOWN]: " : ""),
+				"<unknown type>");
 		break;
 	}
 
-	int len = strlen(tmp);
-	char *ret = malloc(len + 1);
-	if (!ret) return NULL;
-
-	strcpy(ret, tmp);
-
-	return ret;
+	return str;
 }
 
 int truthy(struct eval *v)
