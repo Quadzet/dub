@@ -9,7 +9,8 @@ char *expr_type_strs[] = {
 	"GROUP",
 	"UNARY",
 	"BINARY",
-	"LITERAL"
+	"LITERAL",
+	"VARIABLE"
 };
 
 

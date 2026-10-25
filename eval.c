@@ -336,7 +336,7 @@ struct eval evaluate(struct expr *e)
 
 	if (e == NULL) {
 		log_message(DEBUG, "NULL expression");
-		struct eval v;
+		struct eval v = { V_NIL, { 0 } };
 		return v;
 	}
 
@@ -351,7 +351,7 @@ struct eval evaluate(struct expr *e)
 		return eval_binary(e);
 	default:
 		log_message(ERROR, "Unhandled expr type in evaluate");
-		struct eval v;
+		struct eval v = { V_NIL, { 0 } };
 		return v;
 	}
 }
