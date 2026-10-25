@@ -5,6 +5,7 @@
 #include "logging.h"
 
 #define MAXLINE 10000
+#define T_VEC_SIZE (1<<10)
 
 static int i = 0;
 static int line = 1;
@@ -190,7 +191,6 @@ char *token_to_str(struct token *t)
 	return repr;
 }
 
-#define T_VEC_SIZE 1<<10
 struct t_vector
 {
 	struct token *array;

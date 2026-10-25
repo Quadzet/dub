@@ -62,7 +62,6 @@ struct eval evaluate(struct expr *e);
 struct eval eval_literal(struct expr *e)
 {
 	struct eval v;
-	char *expr = expr_to_str(e);
 
 	v.type = e->op->value_type;
 	v.value = e->op->value;
@@ -317,18 +316,29 @@ struct eval eval_binary(struct expr *e)
 			log_message(ERROR, "Invalid types for comparison");
 			v.type = V_NIL;
 		}
+		break;
 	default:
 		log_message(ERROR, "Unexpected op type in eval_binary");
 		v.type = V_NIL;
 		break;
 	}
-	log_message(DEBUG, "Returning value: %s", eval_to_str(&v, 1));
+	char *eval_str = eval_to_str(&v, 1);
+	log_message(DEBUG, "Returning value: %s", eval_str);
+	free(eval_str);
 	return v;
 }
 
 struct eval evaluate(struct expr *e)
 {
-	log_message(DEBUG, "Evaluating expr: %s", expr_to_str(e));
+	char *expr_str = expr_to_str(e);
+	log_message(DEBUG, "Evaluating expr: %s", expr_str);
+	free(expr_str);
+
+	if (e == NULL) {
+		log_message(DEBUG, "NULL expression");
+		struct eval v;
+		return v;
+	}
 
 	switch (e->type) {
 	case LITERAL:
@@ -357,6 +367,8 @@ void execute(struct stmt *st)
 		printf("%s\n", display_str);
 		break;
 	case STMT_EXPR:
+		break;
+	case STMT_DECL:
 		break;
 	default:
 		log_message(ERROR, "Unhandled statement type");
