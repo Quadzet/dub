@@ -627,9 +627,11 @@ struct stmt *statement()
 	}
 	st->type = STMT_EXPR;
 	st->e = expression();
-	char *expr_str = expr_to_str(st->e);
-	log_message(DEBUG, "Expression: %s", expr_str);
-	free(expr_str);
+	if (st->e != NULL) {
+		char *expr_str = expr_to_str(st->e);
+		log_message(DEBUG, "Expression: %s", expr_str);
+		free(expr_str);
+	}
 	return st;
 }
 
@@ -688,7 +690,7 @@ struct stmt **ast(struct t_vector *in_tokens)
 	int st_ix = 0;
 	while (peek()->type != END) {
 		// Reallocate array in the case of overflow.
-		// +1 to ansure the array is null terminated.
+		// +1 to ensure the array is null terminated.
 		if (st_ix + 1 >= array_size) {
 			struct stmt **new_stmts = calloc(array_size * 2, sizeof(struct stmt *));
 			if (!new_stmts) {
@@ -697,7 +699,7 @@ struct stmt **ast(struct t_vector *in_tokens)
 				return NULL;
 			}
 			memcpy(new_stmts, stmts, array_size * sizeof(struct stmt*));
-			free_stmts(stmts);
+			free(stmts);
 			stmts = new_stmts;
 			array_size *= 2;
 		}
