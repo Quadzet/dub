@@ -17,4 +17,4 @@ target_sources(dub
 	main.c
 )
 
-target_compile_options(dub PRIVATE -g -O0)
+target_compile_options(dub PRIVATE -g -O0 -Wall -Wextra)
