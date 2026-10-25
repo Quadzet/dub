@@ -353,15 +353,15 @@ struct eval eval_binary(struct expr *e)
 
 struct eval evaluate(struct expr *e)
 {
-	char *expr_str = expr_to_str(e);
-	log_message(DEBUG, "Evaluating expr: %s", expr_str);
-	free(expr_str);
-
 	if (e == NULL) {
 		log_message(DEBUG, "NULL expression");
 		struct eval v = { V_NIL, { 0 } };
 		return v;
 	}
+
+	char *expr_str = expr_to_str(e);
+	log_message(DEBUG, "Evaluating expr: %s", expr_str);
+	free(expr_str);
 
 	switch (e->type) {
 	case LITERAL:
@@ -404,15 +404,17 @@ void execute(struct stmt *st)
 
 void interpret(struct stmt **stmts)
 {
+	if (stmts == NULL) {
+		log_message(ERROR, "Null stmts");
+		return;
+	}
+
 	int i = 0;
 	while (stmts[i]) {
-		if (!stmts[i]) {
-			log_message(ERROR, "stmt %d: null stmt", i + 1);
-			return;
-		}
 		execute(stmts[i]);
 		i++;
 	}
+	log_message(DEBUG, "End of evaluation\n");
 }
 
 
