@@ -403,7 +403,6 @@ struct token string(char *buffer, int *i, int *line)
 int scan_token(char *buffer, struct token *t)
 {
 	char c;
-	char err_str[256];
 	while (1) {
 		c = buffer[i++];
 		switch (c)
@@ -494,7 +493,6 @@ struct t_vector *parse_buffer(char *buffer)
 	t_vec->capacity = T_VEC_SIZE;
 	
 	log_message(DEBUG, "Parsing buffer...");
-	char c;
 	i = 0;
 	line = 1;
 	struct token t;

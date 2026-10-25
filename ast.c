@@ -389,7 +389,6 @@ struct expr *primary()
 {
 	struct expr *ret = malloc(sizeof(struct expr));
 	if (!ret) return NULL;
-	struct token *op = peek();
 	char *expr_str = NULL;
 	if (check(FALSE) || check(TRUE) || check(NUMBER) || check(STRING) || check(NIL)) {
 		ret->type = LITERAL;
