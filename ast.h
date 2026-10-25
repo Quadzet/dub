@@ -26,7 +26,8 @@ extern char *stmt_type_strs[];
 enum stmt_type
 {
 	STMT_EXPR,
-	STMT_PRINT
+	STMT_PRINT,
+	STMT_DECL
 };
 
 struct stmt

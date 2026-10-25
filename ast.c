@@ -51,6 +51,35 @@ struct stmt
 	struct expr *e;
 };
 
+void free_expr(struct expr *e)
+{
+	if (!e) return;
+	free_expr(e->left);
+	free_expr(e->right);
+	free(e);
+}
+
+void free_stmts(struct stmt **st)
+{
+	log_message(DEBUG, "Freeing statements");
+	if (!st) return;
+	for (int i = 0; st[i]; i++) {
+		log_message(DEBUG, "Freeing statement %d", i + 1);
+		// DECL statements have a name, the others don't.
+		switch (st[i]->type) {
+			case STMT_DECL:
+			if (st[i]->name != NULL) free(st[i]->name);
+			default:
+			break;
+		}
+		log_message(DEBUG, "Freeing statement %d's expression", i + 1);
+		free_expr(st[i]->e);
+		free(st[i]);
+	}
+	free(st);
+	log_message(DEBUG, "All statements freed");
+}
+
 char *literal_expr_to_str(struct expr *e)
 {
 	if (e == NULL || e->op->lexeme == NULL) {
@@ -242,6 +271,75 @@ char *expr_to_str(struct expr *e)
 	return ret;
 }
 
+char *stmt_to_str(struct stmt *st)
+{
+	if (st == NULL) {
+		log_message(ERROR, "Null stmt in stmt_to_str");
+		return NULL;
+	}
+
+	char *expr_str = NULL;
+	if (st->e != NULL)
+		expr_str = expr_to_str(st->e);
+
+	int ret_len = 0;
+	char *ret = NULL;
+	switch (st->type) {
+	case STMT_EXPR:
+	case STMT_PRINT:
+		if (expr_str != NULL) {
+			ret_len = snprintf(NULL, 0, "[%s]: %s",
+					stmt_type_strs[st->type], expr_str);
+			ret = calloc(ret_len + 1, 1);
+			if (ret == NULL) {
+				log_message(ERROR, "Error allocating stmt str");
+				free(expr_str);
+				return NULL;
+			}
+			sprintf(ret, "[%s]: %s", stmt_type_strs[st->type], expr_str);
+		} else {
+			ret_len = snprintf(NULL, 0, "[%s]", stmt_type_strs[st->type]);
+			ret = calloc(ret_len + 1, 1);
+			if (ret == NULL) {
+				log_message(ERROR, "Error allocating stmt str");
+				free(expr_str);
+				return NULL;
+			}
+			sprintf(ret, "[%s]", stmt_type_strs[st->type]);
+		}
+		break;
+	case STMT_DECL:
+		if (expr_str != NULL) {
+			ret_len = snprintf(NULL, 0, "[%s]: %s = %s",
+					stmt_type_strs[st->type], st->name, expr_str);
+			ret = calloc(ret_len + 1, 1);
+			if (ret == NULL) {
+				log_message(ERROR, "Error allocating stmt str");
+				free(expr_str);
+				return NULL;
+			}
+			sprintf(ret, "[%s]: %s = %s",
+					stmt_type_strs[st->type], st->name, expr_str);
+		} else {
+			ret_len = snprintf(NULL, 0, "[%s]: %s",
+					stmt_type_strs[st->type], st->name);
+			ret = calloc(ret_len + 1, 1);
+			if (ret == NULL) {
+				log_message(ERROR, "Error allocating stmt str");
+				free(expr_str);
+				return NULL;
+			}
+			sprintf(ret, "[%s]: %s", stmt_type_strs[st->type], st->name);
+		}
+		break;
+	default:
+		log_message(ERROR, "Unhandled statement type in stmt_to_str");
+	}
+
+	free(expr_str);
+	return ret;
+}
+
 static void error(struct token *t, char *msg)
 {
 	if (t->type == END) {
@@ -291,13 +389,16 @@ struct expr *primary()
 {
 	struct expr *ret = malloc(sizeof(struct expr));
 	if (!ret) return NULL;
-	struct token *op   = peek();
+	struct token *op = peek();
+	char *expr_str = NULL;
 	if (check(FALSE) || check(TRUE) || check(NUMBER) || check(STRING) || check(NIL)) {
 		ret->type = LITERAL;
 		ret->left = NULL;
 		ret->op = get();
 		ret->right = NULL;
-		log_message(DEBUG, "Literal expression: %s", expr_to_str(ret));
+		expr_str = expr_to_str(ret);
+		log_message(DEBUG, "Literal expression: %s", expr_str);
+		free(expr_str);
 		return ret;
 	} else if (check(LEFT_PAREN)) {
 		get();
@@ -308,7 +409,8 @@ struct expr *primary()
 		}
 		if (!consume(RIGHT_PAREN)) {
 			error(peek(), "Expected closing parenthesis");
-			free(e);
+			free_expr(e);
+			free(ret);
 			return NULL;
 		}
 
@@ -316,14 +418,18 @@ struct expr *primary()
 		ret->left = NULL;
 		ret->op = NULL;
 		ret->right = e;
-		log_message(DEBUG, "Group expression: %s", expr_to_str(ret));
+		expr_str = expr_to_str(ret);
+		log_message(DEBUG, "Group expression: %s", expr_str);
+		free(expr_str);
 		return ret;
 	} else if (check(IDENTIFIER)) {
 		ret->type = VARIABLE;
 		ret->left = NULL;
 		ret->op = get();
 		ret->right = NULL;
-		log_message(DEBUG, "Variable expression: %s", expr_to_str(ret));
+		expr_str = expr_to_str(ret);
+		log_message(DEBUG, "Variable expression: %s", expr_str);
+		free(expr_str);
 		return ret;
 	} else {
 		error(peek(), "Expected expression");
@@ -335,22 +441,24 @@ struct expr *primary()
 struct expr *unary()
 {
 	while (check(BANG) || check(MINUS)) {
-		struct token *op   = get();
+		struct token *op = get();
 		log_message(DEBUG, "Unary operation, lexeme: %s", op->lexeme);
 		struct expr *right = unary();
 		if (!right) return NULL;
 
-		struct expr *e     = malloc(sizeof(struct expr));
+		struct expr *e = malloc(sizeof(struct expr));
 		if (!e) {
 			free(right);
 			return NULL;
 		}
-		e->type      = UNARY;
-		e->left      = NULL;
-		e->op  = op;
-		e->right     = right;
+		e->type  = UNARY;
+		e->left  = NULL;
+		e->op    = op;
+		e->right = right;
+		char *expr_str = expr_to_str(e);
+		log_message(DEBUG, "Unary expression: %s", expr_str);
+		free(expr_str);
 		return e;
-		log_message(DEBUG, "Unary expression: %s", expr_to_str(e));
 	}
 	return primary();
 }
@@ -361,26 +469,28 @@ struct expr *factor()
 	if (!e) return NULL;
 
 	while (check(SLASH) || check(STAR)) {
-		struct token *op   = get();
+		struct token *op = get();
 		log_message(DEBUG, "Factor operation, lexeme: %s", op->lexeme);
 		struct expr *right = unary();
-		if (!right) {
-			free(e);
+		if (right == NULL) {
+			free_expr(e);
 			return NULL;
 		}
 
-		struct expr *tmp   = malloc(sizeof(struct expr));
-		if (!tmp) {
-			free(e);
-			free(right);
+		struct expr *tmp = malloc(sizeof(struct expr));
+		if (tmp == NULL) {
+			free_expr(e);
+			free_expr(right);
 			return NULL;
 		}
-		tmp->type      = BINARY;
-		tmp->left      = e;
-		tmp->op        = op;
-		tmp->right     = right;
+		tmp->type  = BINARY;
+		tmp->left  = e;
+		tmp->op    = op;
+		tmp->right = right;
 		e = tmp;
-		log_message(DEBUG, "Factor expression: %s", expr_to_str(e));
+		char *expr_str = expr_to_str(e);
+		log_message(DEBUG, "Factor expression: %s", expr_str);
+		free(expr_str);
 	}
 	return e;
 }
@@ -395,13 +505,13 @@ struct expr *term()
 		log_message(DEBUG, "Term operation, lexeme: %s", op->lexeme);
 		struct expr *right = factor();
 		if (!right) {
-			free(e);
+			free_expr(e);
 			return NULL;
 		}
 
 		struct expr *tmp = malloc(sizeof(struct expr));
 		if (!tmp) {
-			free(e);
+			free_expr(e);
 			free(right);
 			return NULL;
 		}
@@ -410,7 +520,9 @@ struct expr *term()
 		tmp->op        = op;
 		tmp->right     = right;
 		e = tmp;
-		log_message(DEBUG, "Term expression: %s", expr_to_str(e));
+		char *expr_str = expr_to_str(e);
+		log_message(DEBUG, "Term expression: %s", expr_str);
+		free(expr_str);
 	}
 	return e;
 }
@@ -424,13 +536,13 @@ struct expr *comparison()
 		log_message(DEBUG, "Comparison operation, lexeme: %s", op->lexeme);
 		struct expr *right = term();
 		if (!right) {
-			free(e);
+			free_expr(e);
 			return NULL;
 		}
 
 		struct expr *tmp = malloc(sizeof(struct expr));
 		if (!tmp) {
-			free(e);
+			free_expr(e);
 			free(right);
 			return NULL;
 		}
@@ -439,7 +551,9 @@ struct expr *comparison()
 		tmp->op        = op;
 		tmp->right     = right;
 		e = tmp;
-		log_message(DEBUG, "Comparison expression: %s", expr_to_str(e));
+		char *expr_str = expr_to_str(e);
+		log_message(DEBUG, "Comparison expression: %s", expr_str);
+		free(expr_str);
 	}
 	return e;
 }
@@ -453,13 +567,13 @@ struct expr *equality()
 		log_message(DEBUG, "Equality operation, lexeme: %s", op->lexeme);
 		struct expr *right = comparison();
 		if (!right) {
-			free(e);
+			free_expr(e);
 			return NULL;
 		}
 
 		struct expr *tmp = malloc(sizeof(struct expr));
 		if (!tmp) {
-			free(e);
+			free_expr(e);
 			free(right);
 			return NULL;
 		}
@@ -468,7 +582,9 @@ struct expr *equality()
 		tmp->op  = op;
 		tmp->right     = right;
 		e = tmp;
-		log_message(DEBUG, "Equality expression: %s", expr_to_str(e));
+		char *expr_str = expr_to_str(e);
+		log_message(DEBUG, "Equality expression: %s", expr_str);
+		free(expr_str);
 	}
 	return e;
 }
@@ -483,9 +599,17 @@ struct stmt *print_stmt()
 	log_message(DEBUG, "Print statement, generating expr");
 	consume(PRINT);
 	struct stmt *st = malloc(sizeof(struct stmt));
+	if (st == NULL) {
+		log_message(ERROR, "Error allocating print statement");
+		return NULL;
+	}
 	st->type = STMT_PRINT;
 	st->e = expression();
-	log_message(DEBUG, "Expression: %s", expr_to_str(st->e));
+	if (st->e != NULL) { 
+		char *expr_str = expr_to_str(st->e);
+		log_message(DEBUG, "Expression: %s", expr_str);
+		free(expr_str);
+	}
 	return st;
 }
 
@@ -496,9 +620,15 @@ struct stmt *statement()
 
 	log_message(DEBUG, "Normal statement, generating expr");
 	struct stmt *st = malloc(sizeof(struct stmt));
+	if (st == NULL) {
+		log_message(ERROR, "Error allocating statement");
+		return NULL;
+	}
 	st->type = STMT_EXPR;
 	st->e = expression();
-	log_message(DEBUG, "Expression: %s", expr_to_str(st->e));
+	char *expr_str = expr_to_str(st->e);
+	log_message(DEBUG, "Expression: %s", expr_str);
+	free(expr_str);
 	return st;
 }
 
@@ -508,6 +638,10 @@ struct stmt *declaration()
 		log_message(DEBUG, "Decl statement");
 		consume(VAR);
 		struct stmt *st = malloc(sizeof(struct stmt));
+		if (st == NULL) {
+			log_message(ERROR, "Error allocating statement");
+			return NULL;
+		}
 		struct token *t = consume(IDENTIFIER);
 		if (!t) {
 			free(st);
@@ -541,35 +675,6 @@ struct stmt *declaration()
 }
 
 
-void free_expr(struct expr *e)
-{
-	if (!e) return;
-	free_expr(e->left);
-	free_expr(e->right);
-	free(e);
-}
-
-void free_stmts(struct stmt **st)
-{
-	log_message(DEBUG, "Freeing statements");
-	if (!st) return;
-	for (int i = 0; st[i]; i++) {
-		log_message(DEBUG, "Freeing statement %d", i + 1);
-		// DECL statements have a name, the others don't.
-		switch (st[i]->type) {
-			case STMT_DECL:
-			if (st[i]->name != NULL) free(st[i]->name);
-			default:
-			break;
-		}
-		log_message(DEBUG, "Freeing statement %d's expression", i + 1);
-		free_expr(st[i]->e);
-		free(st[i]);
-	}
-	free(st);
-	log_message(DEBUG, "All statements freed");
-}
-
 struct stmt **ast(struct t_vector *in_tokens)
 {
 	int array_size = 64;
@@ -601,19 +706,19 @@ struct stmt **ast(struct t_vector *in_tokens)
 			return NULL;
 		} else {
 			log_message(DEBUG, "Generated statement number %d", st_ix + 1);
-			log_message(DEBUG, "Expr: %s\n", expr_to_str(st->e));
 		}
 		stmts[st_ix++] = st;
 	}
 
 	log_message(DEBUG, "Abstract Syntax Tree complete. View string representation below:\n");
 	for (int i = 0; i < st_ix; i++) {
-		char *repr = expr_to_str(stmts[i]->e);
+		char *repr = stmt_to_str(stmts[i]);
 		if (!repr) {
 			log_message(ERROR, "Failed to generate a string representation of the Abstract Syntax Tree");
 			return stmts;
 		}
 		log_message(DEBUG, "Statement %d: %s ;", i + 1, repr);
+		free(repr);
 	}
 	log_message(DEBUG, "End of string representation.\n");
 
