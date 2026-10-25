@@ -382,9 +382,11 @@ void execute(struct stmt *st)
 void interpret(struct stmt **stmts)
 {
 	int i = 0;
-	if (!stmts[i])
-		log_message(ERROR, "stmt %d: null stmt", i + 1);
 	while (stmts[i]) {
+		if (!stmts[i]) {
+			log_message(ERROR, "stmt %d: null stmt", i + 1);
+			return;
+		}
 		execute(stmts[i]);
 		i++;
 	}

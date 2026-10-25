@@ -447,7 +447,7 @@ struct expr *unary()
 
 		struct expr *e = malloc(sizeof(struct expr));
 		if (!e) {
-			free(right);
+			free_expr(right);
 			return NULL;
 		}
 		e->type  = UNARY;
@@ -511,7 +511,7 @@ struct expr *term()
 		struct expr *tmp = malloc(sizeof(struct expr));
 		if (!tmp) {
 			free_expr(e);
-			free(right);
+			free_expr(right);
 			return NULL;
 		}
 		tmp->type      = BINARY;
@@ -529,6 +529,7 @@ struct expr *term()
 struct expr *comparison()
 {
 	struct expr *e = term();
+	if (!e) return NULL;
 
 	while (check(GREATER) || check(GREATER_EQUAL) || check(LESS) || check(LESS_EQUAL)) {
 		struct token *op = get();
@@ -542,7 +543,7 @@ struct expr *comparison()
 		struct expr *tmp = malloc(sizeof(struct expr));
 		if (!tmp) {
 			free_expr(e);
-			free(right);
+			free_expr(right);
 			return NULL;
 		}
 		tmp->type      = BINARY;
@@ -560,6 +561,7 @@ struct expr *comparison()
 struct expr *equality()
 {
 	struct expr *e = comparison();
+	if (!e) return NULL;
 
 	while (check(EQUAL_EQUAL) || check(BANG_EQUAL)) {
 		struct token *op = get();
@@ -573,13 +575,13 @@ struct expr *equality()
 		struct expr *tmp = malloc(sizeof(struct expr));
 		if (!tmp) {
 			free_expr(e);
-			free(right);
+			free_expr(right);
 			return NULL;
 		}
-		tmp->type      = BINARY;
-		tmp->left      = e;
-		tmp->op  = op;
-		tmp->right     = right;
+		tmp->type  = BINARY;
+		tmp->left  = e;
+		tmp->op    = op;
+		tmp->right = right;
 		e = tmp;
 		char *expr_str = expr_to_str(e);
 		log_message(DEBUG, "Equality expression: %s", expr_str);
@@ -702,6 +704,7 @@ struct stmt **ast(struct t_vector *in_tokens)
 		struct stmt* st = declaration();
 		if (!st) {
 			log_message(ERROR, "Failed to generate Abstract Syntax Tree");
+			free_stmts(stmts);
 			return NULL;
 		} else {
 			log_message(DEBUG, "Generated statement number %d", st_ix + 1);

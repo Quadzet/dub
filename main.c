@@ -19,7 +19,6 @@ void run(char *buffer)
 {
 	struct t_vector *tokens = parse_buffer(buffer);
 	struct stmt **stmts = ast(tokens);
-
 	interpret(stmts);
 
 	free_t_vector(tokens);

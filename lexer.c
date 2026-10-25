@@ -3,41 +3,11 @@
 #include <string.h>
 #include <ctype.h>
 #include "logging.h"
+#include "lexer.h"
 
-#define MAXLINE 10000
-#define T_VEC_SIZE (1<<10)
-
+// Globals used for parsing the buffer.
 static int i = 0;
 static int line = 1;
-
-enum errors {
-	MALLOC_ERROR,
-	PUSH_BACK_ERROR,
-	INVALID_CHAR_ERROR,
-	UNTERMINATED_STRING_ERROR,
-	SPRINTF_ERROR,
-};
-
-enum token_type {
-	// single char
-	LEFT_PAREN = 1, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
-	LEFT_BRACKET, RIGHT_BRACKET,
-	COMMA, DOT, MINUS, PLUS, SEMICOLON, COLON,
-	SLASH, STAR, 
-
-	// comparisons, one or two char
-	BANG, BANG_EQUAL, EQUAL, EQUAL_EQUAL,
-	GREATER, GREATER_EQUAL, LESS, LESS_EQUAL,
-
-	// literals
-	IDENTIFIER, STRING, NUMBER,
-
-	// keywords
-	AND, CLASS, ELSE, FALSE, FUN, FOR, IF, NIL, OR,
-	PRINT, RETURN, SUPER, THIS, TRUE, VAR, WHILE,
-
-	END,
-};
 
 char *token_strs[] = {
 	"NULL",
@@ -128,27 +98,6 @@ int keyword_tokens[] = {
 	WHILE
 };
 
-enum val_type {
-	V_INT, V_DOUBLE, V_STRING, V_NIL, V_BOOL
-};
-
-union val {
-	int ival;
-	double dval;
-	char *sval;
-	int null;
-	int boolean;
-};
-
-struct token
-{
-	enum token_type type;
-	char *lexeme;
-	int line;
-	union val value;
-	enum val_type value_type;
-};
-
 char *token_to_str(struct token *t)
 {
 	char *repr = malloc(256);
@@ -190,13 +139,6 @@ char *token_to_str(struct token *t)
 	}
 	return repr;
 }
-
-struct t_vector
-{
-	struct token *array;
-	int capacity;
-	int size;
-};
 
 void free_t_vector(struct t_vector *vec)
 {
