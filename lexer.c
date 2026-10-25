@@ -254,9 +254,11 @@ int push_back(struct t_vector *t_vec, struct token t)
 		free(t_vec->array);
 		t_vec->array = new_array;
 		t_vec->capacity *= 2;
+		log_message(DEBUG, "t_vec capacity: %d", t_vec->capacity);
 	}
 	t_vec->array[t_vec->size]= t;
 	t_vec->size++;
+	log_message(DEBUG, "t_vec size: %d, capacity: %d", t_vec->size, t_vec->capacity);
 	return 0;
 }
 
@@ -485,7 +487,7 @@ int scan_token(char *buffer, struct token *t)
 
 struct t_vector *parse_buffer(char *buffer)
 {
-	struct token *tmp = calloc(T_VEC_SIZE, 1);
+	struct token *tmp = calloc(T_VEC_SIZE, sizeof(struct token));
 	struct t_vector *t_vec = malloc(sizeof(struct t_vector));
 	t_vec->array = tmp;
 	t_vec->size = 0;

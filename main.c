@@ -8,10 +8,12 @@ static void error(int code, char *msg)
 	log_message(ERROR, "Error %d: %s", code, msg);
 }
 
+/*
 static void error_no_msg(int code)
 {
 	error(code, "No message");
 }
+*/
 
 void run(char *buffer)
 {
@@ -70,7 +72,6 @@ int read_line(char *s)
 
 void run_prompt()
 {
-	int c;
 	char line[MAXLINE];
 	for(;;) {
 		printf(" >");
