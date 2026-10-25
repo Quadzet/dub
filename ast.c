@@ -688,14 +688,16 @@ struct stmt **ast(struct t_vector *in_tokens)
 	int st_ix = 0;
 	while (peek()->type != END) {
 		// Reallocate array in the case of overflow.
-		if (st_ix >= array_size) {
+		// +1 to ansure the array is null terminated.
+		if (st_ix + 1 >= array_size) {
 			struct stmt **new_stmts = calloc(array_size * 2, sizeof(struct stmt *));
 			if (!new_stmts) {
 				log_message(ERROR, "Failed to reallocate statements array");
+				free_stmts(stmts);
 				return NULL;
 			}
 			memcpy(new_stmts, stmts, array_size * sizeof(struct stmt*));
-			free(stmts);
+			free_stmts(stmts);
 			stmts = new_stmts;
 			array_size *= 2;
 		}
