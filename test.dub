@@ -1,0 +1,8 @@
+print "test_string";
+print 42;
+"test_string";
+42;
+var a = "test_string";
+var b = 42;
+print 40 + 2;
+var c;
