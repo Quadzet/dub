@@ -229,7 +229,6 @@ char *variable_expr_to_str(struct expr *e)
 char *expr_to_str(struct expr *e)
 {
 	if (e == NULL) {
-		log_message(ERROR, "Null expr in expr_to_str");
 		return NULL;
 	}
 	char *ret;

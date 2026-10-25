@@ -385,8 +385,6 @@ void interpret(struct stmt **stmts)
 	if (!stmts[i])
 		log_message(ERROR, "stmt %d: null stmt", i + 1);
 	while (stmts[i]) {
-		if (!stmts[i]->e)
-			log_message(ERROR, "stmt %d: null eval", i + 1);
 		execute(stmts[i]);
 		i++;
 	}
