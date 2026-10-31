@@ -38,6 +38,7 @@ enum token_type {
 
 	END,
 };
+extern char *token_strs[];
 
 enum val_type {
 	V_INT, V_DOUBLE, V_STRING, V_NIL, V_BOOL

@@ -340,15 +340,6 @@ char *stmt_to_str(struct stmt *st)
 	return ret;
 }
 
-static void error(struct token *t, char *msg)
-{
-	if (t->type == END) {
-		log_message(ERROR, "Error on line %d at end: %s", t->line, msg);
-	} else {
-		log_message(ERROR, "Error on line %d at %s: %s", t->line, t->lexeme, msg);
-	}
-}
-
 static struct token *peek()
 {
 	if (i + 1 >= tokens->size) {
@@ -377,8 +368,23 @@ static struct token *consume(enum token_type type)
 	if (check(type)) {
 		return get();
 	} else {
-		log_message(ERROR, "Unexpected token: %s", peek()->lexeme);
+		log_message(DEBUG, "Unexpected token: %s", peek()->lexeme);
 		return NULL;
+	}
+}
+
+static void error(struct token *t, char *msg)
+{
+	if (t->type == END) {
+		log_message(ERROR, "Error on line %d at end: %s", t->line, msg);
+	} else {
+		log_message(ERROR, "Error on line %d at '%s': %s", t->line, t->lexeme, msg);
+	}
+	log_message(DEBUG, "Entering Panic Mode, consuming the current statement");
+	while (!check(END) && !check(SEMICOLON)) {
+		struct token *unexp_token = get();
+		log_message(DEBUG, "Throwing away token %s: %s",
+				token_strs[unexp_token->type], unexp_token->lexeme);
 	}
 }
 
