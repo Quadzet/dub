@@ -2,10 +2,10 @@
 #include <stdarg.h>
 
 char *log_level_strs[] = {
-	"DEBUG",
-	"INFO",
-	"WARNING",
-	"ERROR"
+	"[DEBUG]:",
+	"[INFO]:",
+	"[WARNING]:",
+	"[ERROR]:"
 };
 
 enum LOG_LEVEL {
@@ -23,7 +23,7 @@ void log_message(enum LOG_LEVEL lvl, char *msg, ...)
 		va_list args;
 		va_start(args, msg);
 
-		printf("[%s]: ", log_level_strs[lvl]);
+		printf("%-10s ", log_level_strs[lvl]);
 		vprintf(msg, args);
 		printf("\n");
 
