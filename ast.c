@@ -381,10 +381,18 @@ static void error(struct token *t, char *msg)
 		log_message(ERROR, "Error on line %d at '%s': %s", t->line, t->lexeme, msg);
 	}
 	log_message(DEBUG, "Entering Panic Mode, consuming the current statement");
-	while (!check(END) && !check(SEMICOLON)) {
+	int n_tokens_tossed = 0;
+	for (;;) {
 		struct token *unexp_token = get();
 		log_message(DEBUG, "Throwing away token %s: %s",
 				token_strs[unexp_token->type], unexp_token->lexeme);
+		if (unexp_token->type == END || unexp_token->type == SEMICOLON
+				|| n_tokens_tossed > 1000) {
+			// Could add a flag here if the exit is due to n_tokens_tossed.
+			log_message(DEBUG, "Exiting Panic Mode");
+			break;
+		}
+		n_tokens_tossed++;
 	}
 }
 
@@ -643,10 +651,11 @@ struct stmt *statement()
 
 struct stmt *declaration()
 {
+	struct stmt *st = NULL;
 	if (check(VAR)) {
 		log_message(DEBUG, "Decl statement");
 		consume(VAR);
-		struct stmt *st = malloc(sizeof(struct stmt));
+		st = malloc(sizeof(struct stmt));
 		if (st == NULL) {
 			log_message(ERROR, "Error allocating statement");
 			return NULL;
@@ -672,15 +681,15 @@ struct stmt *declaration()
 
 		log_message(DEBUG, "Binding identifier name");
 		st->type = STMT_DECL;
-		log_message(DEBUG, "Consuming semicolon");
-		consume(SEMICOLON);
-		return st;
 	} else {
-		struct stmt *st = statement();
-		log_message(DEBUG, "Consuming semicolon");
-		consume(SEMICOLON);
-		return st;
+		st = statement();
 	}
+	log_message(DEBUG, "Consuming semicolon");
+	if (!consume(SEMICOLON)) {
+		error(peek(), "Expected semicolon");
+		return NULL;
+	}
+	return st;
 }
 
 
@@ -713,13 +722,14 @@ struct stmt **ast(struct t_vector *in_tokens)
 		log_message(DEBUG, "Generating statement number %d", st_ix + 1);
 		struct stmt* st = declaration();
 		if (!st) {
-			log_message(ERROR, "Failed to generate Abstract Syntax Tree");
-			free_stmts(stmts);
-			return NULL;
+			// We do not need to flag for evaluation to be skipped.
+			// That should be done in the error() function,
+			// which should have already been called if st == NULL.
+			log_message(DEBUG, "Statement number %d is NULL. Throwing it away", st_ix + 1);
 		} else {
 			log_message(DEBUG, "Generated statement number %d", st_ix + 1);
+			stmts[st_ix++] = st;
 		}
-		stmts[st_ix++] = st;
 	}
 
 	log_message(DEBUG, "Abstract Syntax Tree complete. View string representation below:\n");

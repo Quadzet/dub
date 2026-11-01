@@ -200,7 +200,6 @@ int push_back(struct t_vector *t_vec, struct token t)
 	}
 	t_vec->array[t_vec->size]= t;
 	t_vec->size++;
-	log_message(DEBUG, "t_vec size: %d, capacity: %d", t_vec->size, t_vec->capacity);
 	return 0;
 }
 
