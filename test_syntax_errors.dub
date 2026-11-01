@@ -1,0 +1,3 @@
+var b = 42asd;
+print 42,2;
+print "*** Final statement was evaluated. ***";
