@@ -23,9 +23,15 @@ void log_message(enum LOG_LEVEL lvl, char *msg, ...)
 		va_list args;
 		va_start(args, msg);
 
-		printf("%-10s ", log_level_strs[lvl]);
-		vprintf(msg, args);
-		printf("\n");
+		if (lvl >= ERROR) {
+			fprintf(stderr, "%-10s ", log_level_strs[lvl]);
+			vfprintf(stderr, msg, args);
+			fprintf(stderr, "\n");
+		} else {
+			printf("%-10s ", log_level_strs[lvl]);
+			vprintf(msg, args);
+			printf("\n");
+		}
 
 		va_end(args);
 	}

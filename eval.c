@@ -3,6 +3,7 @@
 #include "ast.h"
 #include "logging.h"
 #include "state.h"
+#include <sysexits.h>
 
 char *eval_str(char *msg, ...)
 {
@@ -379,7 +380,7 @@ struct eval evaluate(struct expr *e)
 	}
 }
 
-void execute(struct stmt *st)
+int execute(struct stmt *st)
 {
 	struct eval v = evaluate(st->e);
 	char *debug_str = eval_to_str(&v, 1);
@@ -395,18 +396,19 @@ void execute(struct stmt *st)
 		break;
 	default:
 		log_message(ERROR, "Unhandled statement type");
+		return EX_SOFTWARE;
 	}
 
 	free(debug_str);
 	free(display_str);
-	return;
+	return EX_OK;
 }
 
-void interpret(struct stmt **stmts)
+int interpret(struct stmt **stmts)
 {
 	if (stmts == NULL) {
 		log_message(ERROR, "Null stmts");
-		return;
+		return EX_SOFTWARE;
 	}
 
 	int i = 0;
