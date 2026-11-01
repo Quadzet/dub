@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "eval.h"
+#include "ast.h"
 #include "logging.h"
 
 static void error(int code, char *msg)
@@ -19,7 +20,11 @@ void run(char *buffer)
 {
 	struct t_vector *tokens = parse_buffer(buffer);
 	struct stmt **stmts = ast(tokens);
-	interpret(stmts);
+	if (!panic_mode_triggered)
+		interpret(stmts);
+	else
+		log_message(INFO, "Encountered syntax errors - skipping evaluation");
+
 
 	free_t_vector(tokens);
 	free_stmts(stmts);

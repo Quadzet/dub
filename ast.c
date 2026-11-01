@@ -4,6 +4,7 @@
 
 static int i = 0;
 static struct t_vector *tokens;
+int panic_mode_triggered = 0;
 
 char *expr_type_strs[] = {
 	"GROUP",
@@ -375,6 +376,8 @@ static struct token *consume(enum token_type type)
 
 static void error(struct token *t, char *msg)
 {
+	// Flag used for potentially turning off the evaluation.
+	panic_mode_triggered = 1;
 	if (t->type == END) {
 		log_message(ERROR, "Error on line %d at end: %s", t->line, msg);
 	} else {

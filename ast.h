@@ -3,6 +3,7 @@
 
 #include "lexer.h"
 
+extern int panic_mode_triggered;
 extern char *expr_type_strs[4];
 
 enum expr_type
